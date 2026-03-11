@@ -52,19 +52,28 @@
 const sendEmail = require("../config/email");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { firstName, lastName, email, password, currency } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
     // password hash
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // create user
     const user = new User({
-      name,
+      firstName,
+      lastName,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      currency
     });
 
     // save user
@@ -76,7 +85,7 @@ exports.signup = async (req, res) => {
     await sendEmail(
       email,
       "Welcome to Smart Expense Tracker",
-      "Your account has been created successfully."
+      `Hi ${firstName},\n\nYour account has been created successfully. Welcome to Smart Expense Tracker!`
     );
 
     console.log("Email sent successfully");
@@ -84,12 +93,10 @@ exports.signup = async (req, res) => {
     res.json({ message: "User registered successfully" });
 
   } catch (error) {
-    console.log("Signup error:", error);
+    console.error("Signup error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
-const jwt = require("jsonwebtoken");
 
 exports.login = async (req, res) => {
   try {
@@ -110,7 +117,7 @@ exports.login = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || "fallback_secret_key", // Use env variable in production
+      process.env.JWT_SECRET || "6304675628", // Fallback to provided secret if env is missing
       { expiresIn: "1h" }
     );
 
@@ -119,13 +126,15 @@ exports.login = async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
-        email: user.email
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        currency: user.currency
       }
     });
 
   } catch (error) {
-    console.log("Login error:", error);
+    console.error("Login error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

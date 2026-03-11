@@ -1,6 +1,68 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const navigate = useNavigate();
+
+  // Form State
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [currency, setCurrency] = useState("INR");
+
+  // Status State
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          password,
+          currency,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccess("Account created successfully! Redirecting...");
+        // Clear form
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setPassword("");
+        setCurrency("INR");
+
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+           navigate("/login");
+        }, 2000);
+      } else {
+        setError(data.message || "Something went wrong during signup.");
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError("Failed to connect to the server. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-container">
@@ -101,15 +163,25 @@ export default function Signup() {
               <p className="auth-subtitle">Start your journey to financial freedom</p>
             </div>
 
-            <form className="auth-form" id="signupForm">
+            <form className="auth-form" id="signupForm" onSubmit={handleSignup}>
+              {error && (
+                <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px' }}>
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div style={{ backgroundColor: '#dcfce7', color: '#16a34a', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px' }}>
+                  {success}
+                </div>
+              )}
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="firstName" className="form-label">First Name</label>
-                  <input type="text" id="firstName" className="form-input" placeholder="John" required />
+                  <input type="text" id="firstName" className="form-input" placeholder="John" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label htmlFor="lastName" className="form-label">Last Name</label>
-                  <input type="text" id="lastName" className="form-input" placeholder="Doe" required />
+                  <input type="text" id="lastName" className="form-input" placeholder="Doe" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 </div>
               </div>
 
@@ -119,7 +191,7 @@ export default function Signup() {
                   <svg className="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M3 6L10 11L17 6M4 4H16C16.5523 4 17 4.44772 17 5V15C17 15.5523 16.5523 16 16 16H4C3.44772 16 3 15.5523 3 15V5C3 4.44772 3.44772 4 4 4Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                  <input type="email" id="email" className="form-input" placeholder="you@example.com" required />
+                  <input type="email" id="email" className="form-input" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
               </div>
 
@@ -129,7 +201,7 @@ export default function Signup() {
                   <svg className="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M5 10V7C5 4.79086 6.79086 3 9 3H11C13.2091 3 15 4.79086 15 7V10M7 10H13C14.1046 10 15 10.8954 15 12V15C15 16.1046 14.1046 17 13 17H7C5.89543 17 5 16.1046 5 15V12C5 10.8954 5.89543 10 7 10Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                  <input type="password" id="password" className="form-input" placeholder="••••••••" required />
+                  <input type="password" id="password" className="form-input" placeholder="••••••••" required value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <div className="password-strength">
                   <div className="strength-bar">
@@ -146,7 +218,7 @@ export default function Signup() {
                     <path d="M10 18C14.4183 18 18 14.4183 18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18Z" stroke="#9CA3AF" strokeWidth="1.5" />
                     <path d="M10 6V14M13 8H9C8.44772 8 8 8.44772 8 9C8 9.55228 8.44772 10 9 10H11C11.5523 10 12 10.4477 12 11C12 11.5523 11.5523 12 11 12H8" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                  <select id="currency" className="form-input form-select" required>
+                  <select id="currency" className="form-input form-select" required value={currency} onChange={(e) => setCurrency(e.target.value)}>
                     <option value="INR">₹ INR - Indian Rupee</option>
                     <option value="USD">$ USD - US Dollar</option>
                     <option value="EUR">€ EUR - Euro</option>
@@ -162,11 +234,13 @@ export default function Signup() {
                 </span>
               </label>
 
-              <button type="submit" className="btn btn-primary btn-block btn-large">
-                Create Account
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+              <button type="submit" className="btn btn-primary btn-block btn-large" disabled={loading}>
+                {loading ? "Creating..." : "Create Account"}
+                {!loading && (
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                )}
               </button>
 
               <div className="divider">
