@@ -2,11 +2,11 @@
 
 Team Members:
 - Tharun
-- Member2
-- Member3
-- Member4
+- Nikitha
+- Rakshitha
+- Sameera
+- Mahitha
+- Poojitha
 
 Technologies:
-- React
-- Node.js
-- MongoDB
+
