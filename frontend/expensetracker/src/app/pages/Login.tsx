@@ -1,13 +1,45 @@
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    localStorage.setItem("role", "user");
-    navigate("/dashboard");
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Successful login
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", "user");
+        localStorage.setItem("user", JSON.stringify(data.user));
+        navigate("/dashboard");
+      } else {
+        // Login failed
+        setError(data.message || "Login failed. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please try again later.");
+      console.error("Login error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,13 +73,26 @@ export default function Login() {
             </div>
 
             <form className="auth-form" id="loginForm" onSubmit={handleSubmit}>
+              {error && (
+                <div style={{ backgroundColor: "#fee2e2", color: "#b91c1c", padding: "0.75rem", borderRadius: "0.5rem", marginBottom: "1rem", fontSize: "0.875rem" }}>
+                  {error}
+                </div>
+              )}
               <div className="form-group">
                 <label htmlFor="email" className="form-label">Email Address</label>
                 <div className="input-wrapper">
                   <svg className="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M3 6L10 11L17 6M4 4H16C16.5523 4 17 4.44772 17 5V15C17 15.5523 16.5523 16 16 16H4C3.44772 16 3 15.5523 3 15V5C3 4.44772 3.44772 4 4 4Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                  <input type="email" id="email" className="form-input" placeholder="you@example.com" required />
+                  <input 
+                    type="email" 
+                    id="email" 
+                    className="form-input" 
+                    placeholder="you@example.com" 
+                    required 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -57,7 +102,15 @@ export default function Login() {
                   <svg className="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M5 10V7C5 4.79086 6.79086 3 9 3H11C13.2091 3 15 4.79086 15 7V10M7 10H13C14.1046 10 15 10.8954 15 12V15C15 16.1046 14.1046 17 13 17H7C5.89543 17 5 16.1046 5 15V12C5 10.8954 5.89543 10 7 10Z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                  <input type="password" id="password" className="form-input" placeholder="••••••••" required />
+                  <input 
+                    type="password" 
+                    id="password" 
+                    className="form-input" 
+                    placeholder="••••••••" 
+                    required 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                   <button type="button" className="password-toggle" id="togglePassword">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M10 7C8.34315 7 7 8.34315 7 10C7 11.6569 8.34315 13 10 13C11.6569 13 13 11.6569 13 10C13 8.34315 11.6569 7 10 7Z" stroke="#9CA3AF" strokeWidth="1.5" />
@@ -78,16 +131,19 @@ export default function Login() {
               <button
                 type="submit"
                 className="btn btn-primary btn-block btn-large"
+                disabled={isLoading}
               >
-                Sign In
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path
-                    d="M7.5 15L12.5 10L7.5 5"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                {isLoading ? "Signing in..." : "Sign In"}
+                {!isLoading && (
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M7.5 15L12.5 10L7.5 5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                )}
               </button>
 
               <div className="divider">

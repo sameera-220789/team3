@@ -46,29 +46,12 @@
 const express = require("express");
 const router = express.Router();
 
-const { signup } = require("../controllers/authController");
-const User = require("../models/User");
+const { signup, login } = require("../controllers/authController");
 
 // SIGNUP (Controller use chestham)
 router.post("/signup", signup);
 
 // LOGIN
-router.post("/login", async (req, res) => {
-
-  const { email, password } = req.body;
-
-  const user = await User.findOne({ email, password });
-
-  if (user) {
-    res.json({
-      message: "Login successful"
-    });
-  } else {
-    res.status(401).json({
-      message: "Invalid credentials"
-    });
-  }
-
-});
+router.post("/login", login);
 
 module.exports = router;
