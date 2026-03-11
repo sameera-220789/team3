@@ -74,8 +74,32 @@ export default function Login() {
 
             <form className="auth-form" id="loginForm" onSubmit={handleSubmit}>
               {error && (
-                <div style={{ backgroundColor: "#fee2e2", color: "#b91c1c", padding: "0.75rem", borderRadius: "0.5rem", marginBottom: "1rem", fontSize: "0.875rem" }}>
-                  {error}
+                <div style={{ 
+                  backgroundColor: "#fee2e2", 
+                  color: "#b91c1c", 
+                  padding: "0.75rem", 
+                  borderRadius: "0.5rem", 
+                  marginBottom: "1rem", 
+                  fontSize: "0.875rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem"
+                }}>
+                  <span>{error}</span>
+                  {error === "User account not found. Please sign up first." && (
+                    <Link 
+                      to="/signup" 
+                      style={{ 
+                        color: "#991b1b", 
+                        fontWeight: "600", 
+                        textDecoration: "underline",
+                        display: "inline-block",
+                        marginTop: "0.25rem"
+                      }}
+                    >
+                      Create an account now
+                    </Link>
+                  )}
                 </div>
               )}
               <div className="form-group">
