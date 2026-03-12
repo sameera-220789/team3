@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getUser } from "../utils/api";
 
 type BudgetCategoryId =
   | "food"
@@ -7,7 +8,9 @@ type BudgetCategoryId =
   | "shopping"
   | "bills"
   | "entertainment"
-  | "healthcare";
+  | "healthcare"
+  | "education"
+  | "other";
 
 interface BudgetCategory {
   id: BudgetCategoryId;
@@ -18,56 +21,19 @@ interface BudgetCategory {
   budget: number;
 }
 
-const INITIAL_CATEGORIES: BudgetCategory[] = [
-  {
-    id: "food",
-    emoji: "🍔",
-    name: "Food & Dining",
-    description: "Groceries, restaurants, cafes",
-    spent: 8240,
-    budget: 10000,
-  },
-  {
-    id: "travel",
-    emoji: "✈️",
-    name: "Travel & Transport",
-    description: "Fuel, taxi, public transport",
-    spent: 5670,
-    budget: 8000,
-  },
-  {
-    id: "shopping",
-    emoji: "🛍️",
-    name: "Shopping",
-    description: "Clothing, electronics, etc.",
-    spent: 10840,
-    budget: 12000,
-  },
-  {
-    id: "bills",
-    emoji: "📄",
-    name: "Bills & Utilities",
-    description: "Rent, electricity, internet",
-    spent: 5200,
-    budget: 5000,
-  },
-  {
-    id: "entertainment",
-    emoji: "🎬",
-    name: "Entertainment",
-    description: "Movies, games, subscriptions",
-    spent: 1500,
-    budget: 3000,
-  },
-  {
-    id: "healthcare",
-    emoji: "🏥",
-    name: "Healthcare",
-    description: "Medicine, doctor visits",
-    spent: 1000,
-    budget: 7000,
-  },
-];
+const getCategoryMetadata = (id: string) => {
+  const meta: Record<string, any> = {
+    food: { emoji: "🍔", name: "Food & Dining", description: "Groceries, restaurants, cafes" },
+    travel: { emoji: "✈️", name: "Travel & Transport", description: "Fuel, taxi, public transport" },
+    shopping: { emoji: "🛍️", name: "Shopping", description: "Clothing, electronics, etc." },
+    bills: { emoji: "📄", name: "Bills & Utilities", description: "Rent, electricity, internet" },
+    entertainment: { emoji: "🎬", name: "Entertainment", description: "Movies, games, subscriptions" },
+    healthcare: { emoji: "🏥", name: "Healthcare", description: "Medicine, doctor visits" },
+    education: { emoji: "📚", name: "Education", description: "Course fees, books" },
+    other: { emoji: "💼", name: "Other", description: "Miscellaneous expenses" },
+  };
+  return meta[id] || meta.other;
+};
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -75,24 +41,69 @@ const formatCurrency = (amount: number) =>
   }).format(Math.round(amount));
 
 export default function Budget() {
-  const [categories, setCategories] =
-    useState<BudgetCategory[]>(INITIAL_CATEGORIES);
-  const [editingCategoryId, setEditingCategoryId] =
-    useState<BudgetCategoryId | null>(null);
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [editingCategoryId, setEditingCategoryId] = useState<BudgetCategoryId | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBudgetsData();
+  }, []);
+
+  const fetchBudgetsData = async () => {
+    try {
+      const user = getUser();
+      if (!user) return navigate("/login");
+
+      const [expenseRes, budgetRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`),
+        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`)
+      ]);
+
+      if (expenseRes.ok && budgetRes.ok) {
+        const expenses = await expenseRes.json();
+        const budgets = await budgetRes.json();
+
+        // Calculate spending per category
+        const spentByCategory: Record<string, number> = {};
+        expenses.forEach((exp: any) => {
+          spentByCategory[exp.category] = (spentByCategory[exp.category] || 0) + exp.amount;
+        });
+
+        // Merge with defined budgets
+        const loadedCategories = budgets.map((b: any) => {
+          const meta = getCategoryMetadata(b.category);
+          return {
+            id: b.category,
+            emoji: meta.emoji,
+            name: meta.name,
+            description: meta.description,
+            spent: spentByCategory[b.category] || 0,
+            budget: b.limit
+          };
+        });
+
+        setCategories(loadedCategories);
+      }
+    } catch (error) {
+      console.error("Error fetching budget data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const totalBudget = categories.reduce((sum, category) => sum + category.budget, 0);
   const totalSpent = categories.reduce((sum, category) => sum + category.spent, 0);
   const remaining = totalBudget - totalSpent;
-  const overallUtilization =
-    totalBudget === 0 ? 0 : (totalSpent / totalBudget) * 100;
+  const overallUtilization = totalBudget === 0 ? 0 : (totalSpent / totalBudget) * 100;
 
   const startEditing = (category: BudgetCategory) => {
     setEditingCategoryId(category.id);
     setEditingValue(category.budget.toString());
   };
 
-  const saveEditing = (categoryId: BudgetCategoryId) => {
+  const saveEditing = async (categoryId: BudgetCategoryId) => {
     const numericValue = Number(editingValue.replace(/,/g, ""));
     if (!Number.isFinite(numericValue) || numericValue < 0) {
       setEditingCategoryId(null);
@@ -100,16 +111,29 @@ export default function Budget() {
       return;
     }
 
-    setCategories((prev) =>
-      prev.map((category) =>
-        category.id === categoryId
-          ? {
-              ...category,
-              budget: numericValue,
-            }
-          : category
-      )
-    );
+    try {
+      const user = getUser();
+      if (!user) return;
+      
+      const response = await fetch("http://localhost:5000/api/budgets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
+      });
+      
+      if (response.ok) {
+        setCategories((prev) =>
+          prev.map((category) =>
+            category.id === categoryId ? { ...category, budget: numericValue } : category
+          )
+        );
+      } else {
+        alert("Failed to save budget");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error updating budget");
+    }
 
     setEditingCategoryId(null);
     setEditingValue("");
@@ -457,13 +481,63 @@ export default function Budget() {
 
           {/* Add New Budget */}
           <div className="add-budget-card">
-            <button className="add-budget-btn">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
-                <path d="M16 10V22M10 16H22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <span>Add New Budget Category</span>
-            </button>
+            <div className="add-budget-form" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <select className="form-input form-select" style={{ width: 'auto' }} id="new-budget-category">
+                <option value="food">Food</option>
+                <option value="travel">Travel</option>
+                <option value="shopping">Shopping</option>
+                <option value="bills">Bills</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="education">Education</option>
+                <option value="other">Other</option>
+              </select>
+              <input type="number" id="new-budget-amount" className="budget-input" placeholder="Budget Amount" style={{ padding: '0.5rem', border: '1px solid #e5e7eb', borderRadius: '0.375rem' }} />
+              <button 
+                className="add-budget-btn"
+                onClick={async () => {
+                  const categorySelect = document.getElementById('new-budget-category') as HTMLSelectElement;
+                  const amountInput = document.getElementById('new-budget-amount') as HTMLInputElement;
+                  
+                  if (!categorySelect || !amountInput || !amountInput.value) return;
+                  
+                  const categoryId = categorySelect.value as BudgetCategoryId;
+                  const numericValue = Number(amountInput.value);
+                  
+                  // Check if already exists in categories list
+                  if (categories.some(c => c.id === categoryId)) {
+                     alert("You already have a budget for this category. Please edit the existing one.");
+                     return;
+                  }
+                  
+                  try {
+                    const user = getUser();
+                    if (!user) return;
+                    
+                    const response = await fetch("http://localhost:5000/api/budgets", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
+                    });
+                    
+                    if (response.ok) {
+                      amountInput.value = "";
+                      fetchBudgetsData(); // Refresh all budget data
+                    } else {
+                      alert("Failed to add budget category");
+                    }
+                  } catch (e) {
+                    console.error(e);
+                    alert("Network error adding budget");
+                  }
+                }}
+                style={{ padding: '0.5rem 1rem', background: '#6366f1', color: 'white', borderRadius: '0.375rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                  <path d="M16 10V22M10 16H22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <span>Add Category</span>
+              </button>
+            </div>
           </div>
         </div>
       </main>

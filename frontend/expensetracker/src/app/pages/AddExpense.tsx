@@ -1,6 +1,58 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getUser } from "../utils/api";
 
 export default function AddExpense() {
+  const navigate = useNavigate();
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("other");
+  const [date, setDate] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [description, setDescription] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const user = getUser();
+      if (!user) {
+        alert("Please login first");
+        navigate("/login");
+        return;
+      }
+      
+      const response = await fetch("http://localhost:5000/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          amount: Number(amount),
+          category,
+          date,
+          paymentMethod,
+          description,
+          isRecurring
+        })
+      });
+
+      if (response.ok) {
+        alert("Expense added successfully!");
+        setAmount("");
+        setDescription("");
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to add expense: ${errorData.message}`);
+      }
+    } catch (error) {
+      console.error("Error adding expense:", error);
+      alert("Network error.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="dashboard-page">
       {/* Sidebar */}
@@ -63,7 +115,7 @@ export default function AddExpense() {
             </svg>
             <span>Profile</span>
           </Link>
-          <button className="sidebar-link logout-btn">
+          <button className="sidebar-link logout-btn" onClick={() => { localStorage.clear(); navigate('/login'); }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V15C17 15.5304 16.7893 16.0391 16.4142 16.4142C16.0391 16.7893 15.5304 17 15 17H13M7 13L3 10M3 10L7 7M3 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -99,7 +151,7 @@ export default function AddExpense() {
                   <h2 className="card-title">Expense Details</h2>
                   <p className="card-subtitle">Fill in the information below</p>
                 </div>
-                <form className="expense-form">
+                <form className="expense-form" onSubmit={handleAddExpense}>
                   <div className="form-group">
                     <label htmlFor="amount" className="form-label required">Amount</label>
                     <div className="amount-input-wrapper">
@@ -111,6 +163,8 @@ export default function AddExpense() {
                         placeholder="0.00"
                         step="0.01"
                         required
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
                       />
                     </div>
                   </div>
@@ -119,56 +173,56 @@ export default function AddExpense() {
                     <label htmlFor="category" className="form-label required">Category</label>
                     <div className="category-grid">
                       <label className="category-option">
-                        <input type="radio" name="category" value="food" required />
+                        <input type="radio" name="category" value="food" required checked={category === "food"} onChange={() => setCategory("food")} />
                         <div className="category-card">
                           <span className="category-emoji">🍔</span>
                           <span className="category-name">Food</span>
                         </div>
                       </label>
                       <label className="category-option">
-                        <input type="radio" name="category" value="travel" required />
+                        <input type="radio" name="category" value="travel" required checked={category === "travel"} onChange={() => setCategory("travel")} />
                         <div className="category-card">
                           <span className="category-emoji">✈️</span>
                           <span className="category-name">Travel</span>
                         </div>
                       </label>
                       <label className="category-option">
-                        <input type="radio" name="category" value="shopping" required />
+                        <input type="radio" name="category" value="shopping" required checked={category === "shopping"} onChange={() => setCategory("shopping")} />
                         <div className="category-card">
                           <span className="category-emoji">🛍️</span>
                           <span className="category-name">Shopping</span>
                         </div>
                       </label>
                       <label className="category-option">
-                        <input type="radio" name="category" value="bills" required />
+                        <input type="radio" name="category" value="bills" required checked={category === "bills"} onChange={() => setCategory("bills")} />
                         <div className="category-card">
                           <span className="category-emoji">📄</span>
                           <span className="category-name">Bills</span>
                         </div>
                       </label>
                       <label className="category-option">
-                        <input type="radio" name="category" value="entertainment" required />
+                        <input type="radio" name="category" value="entertainment" required checked={category === "entertainment"} onChange={() => setCategory("entertainment")} />
                         <div className="category-card">
                           <span className="category-emoji">🎬</span>
                           <span className="category-name">Entertainment</span>
                         </div>
                       </label>
                       <label className="category-option">
-                        <input type="radio" name="category" value="healthcare" required />
+                        <input type="radio" name="category" value="healthcare" required checked={category === "healthcare"} onChange={() => setCategory("healthcare")} />
                         <div className="category-card">
                           <span className="category-emoji">🏥</span>
                           <span className="category-name">Healthcare</span>
                         </div>
                       </label>
                       <label className="category-option">
-                        <input type="radio" name="category" value="education" required />
+                        <input type="radio" name="category" value="education" required checked={category === "education"} onChange={() => setCategory("education")} />
                         <div className="category-card">
                           <span className="category-emoji">📚</span>
                           <span className="category-name">Education</span>
                         </div>
                       </label>
                       <label className="category-option">
-                        <input type="radio" name="category" value="other" required />
+                        <input type="radio" name="category" value="other" required checked={category === "other"} onChange={() => setCategory("other")} />
                         <div className="category-card">
                           <span className="category-emoji">💼</span>
                           <span className="category-name">Other</span>
@@ -190,6 +244,8 @@ export default function AddExpense() {
                           id="date"
                           className="form-input"
                           required
+                          value={date}
+                          onChange={(e) => setDate(e.target.value)}
                         />
                       </div>
                     </div>
@@ -200,7 +256,7 @@ export default function AddExpense() {
                           <rect x="2" y="5" width="16" height="10" rx="2" stroke="#9CA3AF" strokeWidth="1.5" />
                           <path d="M2 9H18" stroke="#9CA3AF" strokeWidth="1.5" />
                         </svg>
-                        <select id="paymentMethod" className="form-input form-select">
+                        <select id="paymentMethod" className="form-input form-select" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                           <option value="cash">Cash</option>
                           <option value="card">Credit/Debit Card</option>
                           <option value="upi">UPI</option>
@@ -217,12 +273,14 @@ export default function AddExpense() {
                       className="form-input form-textarea"
                       placeholder="Add notes about this expense..."
                       rows={3}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                     ></textarea>
                   </div>
 
                   <div className="form-group">
                     <label className="checkbox-label">
-                      <input type="checkbox" className="checkbox-input" id="recurring" />
+                      <input type="checkbox" className="checkbox-input" id="recurring" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} />
                       <span className="checkbox-text">This is a recurring expense</span>
                     </label>
                   </div>
@@ -234,11 +292,11 @@ export default function AddExpense() {
                       </svg>
                       Save as Draft
                     </button>
-                    <button type="submit" className="btn btn-primary btn-large">
+                    <button type="submit" className="btn btn-primary btn-large" disabled={loading}>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M16 10L7 10M7 10L11 6M7 10L11 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
-                      Add Expense
+                      {loading ? "Adding..." : "Add Expense"}
                     </button>
                   </div>
                 </form>

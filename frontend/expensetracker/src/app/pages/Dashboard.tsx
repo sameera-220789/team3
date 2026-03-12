@@ -1,8 +1,17 @@
-import React from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { getUser } from "../utils/api";
 
 export default function Dashboard() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = getUser();
+  
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
 
   const getPageTitle = () => {
     if (location.pathname.startsWith("/dashboard/transactions")) {
@@ -11,7 +20,7 @@ export default function Dashboard() {
     if (location.pathname.startsWith("/dashboard/reports")) {
       return "Reports";
     }
-    return "Welcome back, Rajesh! 👋";
+    return `Welcome back, ${user?.firstName || 'User'}! 👋`;
   };
 
   const getPageSubtitle = () => {
@@ -102,7 +111,7 @@ export default function Dashboard() {
             </svg>
             <span>Profile</span>
           </Link>
-          <button className="sidebar-link logout-btn">
+          <button className="sidebar-link logout-btn" onClick={() => { localStorage.clear(); navigate('/login'); }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V15C17 15.5304 16.7893 16.0391 16.4142 16.4142C16.0391 16.7893 15.5304 17 15 17H13M7 13L3 10M3 10L7 7M3 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -132,9 +141,9 @@ export default function Dashboard() {
               Add Expense
             </Link>
             <div className="user-panel">
-              <div className="user-avatar">RK</div>
+              <div className="user-avatar">{user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}</div>
               <div className="user-info">
-                <p className="user-name">Rajesh Kumar</p>
+                <p className="user-name">{user?.firstName} {user?.lastName}</p>
                 <p className="user-role">Personal Account</p>
               </div>
             </div>
@@ -150,6 +159,67 @@ export default function Dashboard() {
 }
 
 export function DashboardOverview() {
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const user = getUser();
+        if(!user) return;
+        const [expenseRes, budgetRes] = await Promise.all([
+          fetch(`http://localhost:5000/api/expenses?userId=${user.id}`),
+          fetch(`http://localhost:5000/api/budgets?userId=${user.id}`)
+        ]);
+        
+        if (expenseRes.ok && budgetRes.ok) {
+          const expenseData = await expenseRes.json();
+          const budgetData = await budgetRes.json();
+          setExpenses(expenseData);
+          setBudgets(budgetData);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
+  const remainingBudget = totalBudget - totalExpenses;
+
+  const getEmoji = (category: string) => {
+    switch (category) {
+      case 'food': return '🍔';
+      case 'travel': return '🚕';
+      case 'shopping': return '🛍️';
+      case 'bills': return '📄';
+      case 'entertainment': return '🎬';
+      case 'healthcare': return '🏥';
+      case 'education': return '📚';
+      default: return '💼';
+    }
+  };
+
+  const getCategoryTheme = (category: string) => {
+    switch(category) {
+      case 'food': return 'food';
+      case 'travel': return 'travel';
+      case 'shopping': return 'shopping';
+      case 'bills': return 'bills';
+      case 'entertainment': return 'entertainment';
+      default: return 'other';
+    }
+  };
+
+  if(loading) {
+    return <div>Loading dashboard...</div>;
+  }
+
   return (
     <>
       {/* Stats Grid */}
@@ -163,17 +233,17 @@ export function DashboardOverview() {
                     <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <span className="stat-label">Total Balance</span>
+                <span className="stat-label">Total Balance (Remaining)</span>
               </div>
-              <p className="stat-value">₹1,24,560</p>
+              <p className="stat-value">₹{remainingBudget}</p>
               <div className="stat-footer">
                 <span className="stat-change positive">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M8 12V4M4 8L8 4L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  +12.5%
+                  Calculated Output
                 </span>
-                <span className="stat-period">from last month</span>
+                <span className="stat-period">from budgets</span>
               </div>
             </div>
 
@@ -187,15 +257,15 @@ export function DashboardOverview() {
                 </div>
                 <span className="stat-label">Total Expenses</span>
               </div>
-              <p className="stat-value">₹32,450</p>
+              <p className="stat-value">₹{totalExpenses}</p>
               <div className="stat-footer">
                 <span className="stat-change negative">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M8 4V12M4 8L8 12L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  -5.4%
+                  All time
                 </span>
-                <span className="stat-period">from last month</span>
+                <span className="stat-period"></span>
               </div>
             </div>
 
@@ -208,14 +278,14 @@ export function DashboardOverview() {
                     <rect x="5" y="9" width="14" height="12" rx="1" stroke="currentColor" strokeWidth="2" />
                   </svg>
                 </div>
-                <span className="stat-label">Savings Goal</span>
+                <span className="stat-label">Total Allocated Budgets</span>
               </div>
-              <p className="stat-value">₹50,000</p>
+              <p className="stat-value">₹{totalBudget}</p>
               <div className="stat-footer">
                 <div className="mini-progress">
-                  <div className="mini-progress-bar" style={{ width: "68%" }}></div>
+                  <div className="mini-progress-bar" style={{ width: `${Math.min(100, (totalExpenses/totalBudget)*100)}%` }}></div>
                 </div>
-                <span className="stat-period">68% achieved</span>
+                <span className="stat-period">Budget Utilization</span>
               </div>
             </div>
 
@@ -227,17 +297,13 @@ export function DashboardOverview() {
                     <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span className="stat-label">Avg. Daily Spend</span>
+                <span className="stat-label">Transactions</span>
               </div>
-              <p className="stat-value">₹1,082</p>
+              <p className="stat-value">{expenses.length}</p>
               <div className="stat-footer">
                 <span className="stat-change neutral">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  0.2%
+                  Total
                 </span>
-                <span className="stat-period">from last week</span>
               </div>
             </div>
       </div>
@@ -358,7 +424,7 @@ export function DashboardOverview() {
             <div className="card col-span-2">
               <div className="card-header-section">
                 <h3 className="card-title">Recent Transactions</h3>
-                <a href="#" className="view-all-link">View all</a>
+                <Link to="/dashboard/transactions" className="view-all-link">View all</Link>
               </div>
               <div className="transactions-table">
                 <table>
@@ -372,66 +438,22 @@ export function DashboardOverview() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>
-                        <div className="transaction-desc">
-                          <span className="transaction-emoji">🍔</span>
-                          <span>Dinner at Olive Garden</span>
-                        </div>
-                      </td>
-                      <td><span className="category-badge food">Food</span></td>
-                      <td>Mar 9, 2026</td>
-                      <td>Credit Card</td>
-                      <td className="amount">₹850</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div className="transaction-desc">
-                          <span className="transaction-emoji">🚕</span>
-                          <span>Uber to Airport</span>
-                        </div>
-                      </td>
-                      <td><span className="category-badge travel">Travel</span></td>
-                      <td>Mar 8, 2026</td>
-                      <td>UPI</td>
-                      <td className="amount">₹420</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div className="transaction-desc">
-                          <span className="transaction-emoji">🛍️</span>
-                          <span>Amazon Shopping</span>
-                        </div>
-                      </td>
-                      <td><span className="category-badge shopping">Shopping</span></td>
-                      <td>Mar 8, 2026</td>
-                      <td>Debit Card</td>
-                      <td className="amount">₹2,340</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div className="transaction-desc">
-                          <span className="transaction-emoji">📄</span>
-                          <span>Electricity Bill</span>
-                        </div>
-                      </td>
-                      <td><span className="category-badge bills">Bills</span></td>
-                      <td>Mar 7, 2026</td>
-                      <td>Net Banking</td>
-                      <td className="amount">₹1,890</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div className="transaction-desc">
-                          <span className="transaction-emoji">🎬</span>
-                          <span>Movie Tickets</span>
-                        </div>
-                      </td>
-                      <td><span className="category-badge entertainment">Entertainment</span></td>
-                      <td>Mar 6, 2026</td>
-                      <td>UPI</td>
-                      <td className="amount">₹600</td>
-                    </tr>
+                    {expenses.length > 0 ? expenses.slice(0, 5).map((exp) => (
+                      <tr key={exp._id}>
+                        <td>
+                          <div className="transaction-desc">
+                            <span className="transaction-emoji">{getEmoji(exp.category)}</span>
+                            <span>{exp.description || 'No Description'}</span>
+                          </div>
+                        </td>
+                        <td><span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span></td>
+                        <td>{new Date(exp.date || exp.createdAt).toLocaleDateString()}</td>
+                        <td>{exp.paymentMethod || 'Cash'}</td>
+                        <td className="amount">₹{exp.amount}</td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>

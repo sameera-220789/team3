@@ -5,7 +5,9 @@ const Budget = require("../models/Budget");
 // GET budgets
 router.get("/", async (req, res) => {
   try {
-    const budgets = await Budget.find();
+    const { userId } = req.query;
+    const filter = userId ? { userId } : {};
+    const budgets = await Budget.find(filter);
     res.json(budgets);
   } catch (err) {
     res.status(500).json(err);
@@ -16,10 +18,10 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
 
-    const { category, limit } = req.body;
+    const { userId, category, limit } = req.body;
 
     // already category budget unda check
-    let existingBudget = await Budget.findOne({ category });
+    let existingBudget = await Budget.findOne({ userId, category });
 
     if (existingBudget) {
 
@@ -34,6 +36,7 @@ router.post("/", async (req, res) => {
 
       // create new budget
       const newBudget = new Budget({
+        userId,
         category,
         limit
       });
