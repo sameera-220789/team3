@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getUser } from "../utils/api";
 
@@ -6,11 +6,30 @@ export default function AddExpense() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("other");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [description, setDescription] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
+
+  const fetchRecentExpenses = async () => {
+    try {
+      const user = getUser();
+      if (!user) return;
+      const res = await fetch(`http://localhost:5000/api/expenses?userId=${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRecentExpenses(data);
+      }
+    } catch (error) {
+      console.error("Error fetching recent expenses:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentExpenses();
+  }, []);
   
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +60,7 @@ export default function AddExpense() {
         alert("Expense added successfully!");
         setAmount("");
         setDescription("");
+        await fetchRecentExpenses(); // Dynamic update without refresh
       } else {
         const errorData = await response.json();
         alert(`Failed to add expense: ${errorData.message}`);
@@ -108,7 +128,7 @@ export default function AddExpense() {
           </a>
         </nav>
         <div className="sidebar-footer">
-          <Link to="/admin" className="sidebar-link">
+          <Link to="/profile" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M10 11C12.2091 11 14 9.20914 14 7C14 4.79086 12.2091 3 10 3C7.79086 3 6 4.79086 6 7C6 9.20914 7.79086 11 10 11Z" stroke="currentColor" strokeWidth="1.5" />
               <path d="M3 17V16C3 14.3431 4.34315 13 6 13H14C15.6569 13 17 14.3431 17 16V17" stroke="currentColor" strokeWidth="1.5" />
@@ -132,7 +152,7 @@ export default function AddExpense() {
             <p className="page-subtitle">Record a new transaction quickly and easily</p>
           </div>
           <div className="header-actions">
-            <button className="btn btn-secondary">
+            <button className="btn btn-secondary" onClick={() => navigate('/dashboard/transactions')}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M3 3V17H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <path d="M7 13L10 7L13 10L17 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -329,87 +349,102 @@ export default function AddExpense() {
             {/* Right: Summary & Recent */}
             <div className="expense-sidebar-content">
               {/* Today's Summary */}
-              <div className="card summary-card">
-                <div className="card-header-section">
-                  <h3 className="card-title">Today's Summary</h3>
-                  <span className="date-badge">Mar 9, 2026</span>
-                </div>
-                <div className="summary-stats">
-                  <div className="summary-stat">
-                    <span className="summary-label">Total Spent</span>
-                    <span className="summary-value primary">₹1,240</span>
-                  </div>
-                  <div className="summary-divider"></div>
-                  <div className="summary-stat">
-                    <span className="summary-label">Transactions</span>
-                    <span className="summary-value">8</span>
-                  </div>
-                </div>
-                <div className="category-breakdown">
-                  <h4 className="breakdown-title">Category Breakdown</h4>
-                  <div className="breakdown-item">
-                    <div className="breakdown-info">
-                      <span className="breakdown-icon">🍔</span>
-                      <span className="breakdown-name">Food</span>
+              {(() => {
+                const today = new Date().toISOString().split("T")[0];
+                const todaysExpenses = recentExpenses.filter(e => {
+                  const eDate = new Date(e.date || e.createdAt).toISOString().split("T")[0];
+                  return eDate === today;
+                });
+                
+                const todayTotal = todaysExpenses.reduce((sum, e) => sum + e.amount, 0);
+                
+                const categoryTotals = todaysExpenses.reduce((acc, e) => {
+                  acc[e.category] = (acc[e.category] || 0) + e.amount;
+                  return acc;
+                }, {} as Record<string, number>);
+
+                const getEmoji = (cat: string) => {
+                  switch (cat) {
+                    case 'food': return '🍔';
+                    case 'travel': return '🚕';
+                    case 'shopping': return '🛍️';
+                    case 'bills': return '📄';
+                    case 'entertainment': return '🎬';
+                    case 'healthcare': return '🏥';
+                    case 'education': return '📚';
+                    default: return '💼';
+                  }
+                };
+
+                return (
+                  <div className="card summary-card">
+                    <div className="card-header-section">
+                      <h3 className="card-title">Today's Summary</h3>
+                      <span className="date-badge">{new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}</span>
                     </div>
-                    <span className="breakdown-amount">₹480</span>
-                  </div>
-                  <div className="breakdown-item">
-                    <div className="breakdown-info">
-                      <span className="breakdown-icon">✈️</span>
-                      <span className="breakdown-name">Travel</span>
+                    <div className="summary-stats">
+                      <div className="summary-stat">
+                        <span className="summary-label">Total Spent</span>
+                        <span className="summary-value primary">₹{todayTotal}</span>
+                      </div>
+                      <div className="summary-divider"></div>
+                      <div className="summary-stat">
+                        <span className="summary-label">Transactions</span>
+                        <span className="summary-value">{todaysExpenses.length}</span>
+                      </div>
                     </div>
-                    <span className="breakdown-amount">₹360</span>
+                    {todaysExpenses.length > 0 && (
+                      <div className="category-breakdown">
+                        <h4 className="breakdown-title">Category Breakdown</h4>
+                        {Object.entries(categoryTotals).map(([cat, amt]) => (
+                          <div className="breakdown-item" key={cat}>
+                            <div className="breakdown-info">
+                              <span className="breakdown-icon">{getEmoji(cat)}</span>
+                              <span className="breakdown-name" style={{textTransform: 'capitalize'}}>{cat}</span>
+                            </div>
+                            <span className="breakdown-amount">₹{String(amt)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="breakdown-item">
-                    <div className="breakdown-info">
-                      <span className="breakdown-icon">🛍️</span>
-                      <span className="breakdown-name">Shopping</span>
-                    </div>
-                    <span className="breakdown-amount">₹400</span>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Recent Transactions */}
               <div className="card recent-card">
                 <div className="card-header-section">
                   <h3 className="card-title">Recent Transactions</h3>
-                  <a href="#" className="view-all-link">View all</a>
+                  <Link to="/dashboard/transactions" className="view-all-link">View all</Link>
                 </div>
                 <div className="recent-transactions">
-                  <div className="transaction-item">
-                    <div className="transaction-icon food">🍔</div>
-                    <div className="transaction-details">
-                      <p className="transaction-name">Lunch at Cafe</p>
-                      <p className="transaction-time">2 hours ago</p>
-                    </div>
-                    <span className="transaction-amount">₹350</span>
-                  </div>
-                  <div className="transaction-item">
-                    <div className="transaction-icon travel">🚕</div>
-                    <div className="transaction-details">
-                      <p className="transaction-name">Uber Ride</p>
-                      <p className="transaction-time">4 hours ago</p>
-                    </div>
-                    <span className="transaction-amount">₹180</span>
-                  </div>
-                  <div className="transaction-item">
-                    <div className="transaction-icon shopping">🛍️</div>
-                    <div className="transaction-details">
-                      <p className="transaction-name">Amazon Order</p>
-                      <p className="transaction-time">Yesterday</p>
-                    </div>
-                    <span className="transaction-amount">₹1,250</span>
-                  </div>
-                  <div className="transaction-item">
-                    <div className="transaction-icon bills">📄</div>
-                    <div className="transaction-details">
-                      <p className="transaction-name">Electricity Bill</p>
-                      <p className="transaction-time">2 days ago</p>
-                    </div>
-                    <span className="transaction-amount">₹2,450</span>
-                  </div>
+                  {recentExpenses.length > 0 ? recentExpenses.slice(0, 4).map(exp => {
+                    const getTheme = (cat: string) => ['food', 'travel', 'shopping', 'bills'].includes(cat) ? cat : 'other';
+                    const getEmoji = (cat: string) => {
+                      switch (cat) {
+                        case 'food': return '🍔';
+                        case 'travel': return '🚕';
+                        case 'shopping': return '🛍️';
+                        case 'bills': return '📄';
+                        case 'entertainment': return '🎬';
+                        case 'healthcare': return '🏥';
+                        case 'education': return '📚';
+                        default: return '💼';
+                      }
+                    };
+                    return (
+                      <div className="transaction-item" key={exp._id}>
+                        <div className={`transaction-icon ${getTheme(exp.category)}`}>{getEmoji(exp.category)}</div>
+                        <div className="transaction-details">
+                          <p className="transaction-name">{exp.description ? String(exp.description) : `${String(exp.category)} expense`}</p>
+                          <p className="transaction-time">{new Date(exp.date || exp.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <span className="transaction-amount">₹{String(exp.amount)}</span>
+                      </div>
+                    );
+                  }) : (
+                    <div style={{textAlign: 'center', padding: '1rem', color: '#6B7280'}}>No recent transactions</div>
+                  )}
                 </div>
               </div>
 

@@ -104,7 +104,7 @@ export default function Dashboard() {
           </NavLink>
         </nav>
         <div className="sidebar-footer">
-          <Link to="/admin" className="sidebar-link">
+          <Link to="/profile" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M10 11C12.2091 11 14 9.20914 14 7C14 4.79086 12.2091 3 10 3C7.79086 3 6 4.79086 6 7C6 9.20914 7.79086 11 10 11Z" stroke="currentColor" strokeWidth="1.5" />
               <path d="M3 17V16C3 14.3431 4.34315 13 6 13H14C15.6569 13 17 14.3431 17 16V17" stroke="currentColor" strokeWidth="1.5" />
@@ -168,9 +168,10 @@ export function DashboardOverview() {
       try {
         const user = getUser();
         if(!user) return;
+        const fetchOpts = { cache: "no-store" as RequestCache };
         const [expenseRes, budgetRes] = await Promise.all([
-          fetch(`http://localhost:5000/api/expenses?userId=${user.id}`),
-          fetch(`http://localhost:5000/api/budgets?userId=${user.id}`)
+          fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
+          fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts)
         ]);
         
         if (expenseRes.ok && budgetRes.ok) {
@@ -190,7 +191,8 @@ export function DashboardOverview() {
 
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
   const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
-  const remainingBudget = totalBudget - totalExpenses;
+  const remainingBudget = Math.max(0, totalBudget - totalExpenses);
+  const utilizationPercent = totalBudget === 0 ? 0 : Math.min(100, (totalExpenses/totalBudget)*100);
 
   const getEmoji = (category: string) => {
     switch (category) {
@@ -216,12 +218,115 @@ export function DashboardOverview() {
     }
   };
 
+  const categoryTotals = expenses.reduce((acc, exp) => {
+    const cat = ['food', 'shopping', 'travel'].includes(exp.category) ? exp.category : 'others';
+    acc[cat] = (acc[cat] || 0) + exp.amount;
+    return acc;
+  }, { food: 0, shopping: 0, travel: 0, others: 0 });
+
+  const C = 502.65; // Circumference for r=80
+  let offsetAccumulator = 0;
+
+  const [tooltipData, setTooltipData] = useState<{show: boolean, name: string, amount: number, x: number, y: number}>({ show: false, name: '', amount: 0, x: 0, y: 0 });
+
+  const getDonutProps = (amount: number, categoryName: string) => {
+    if (totalExpenses === 0) return {};
+    const val = (amount / totalExpenses) * C;
+    const props = {
+      strokeDasharray: `${val} ${C}`,
+      strokeDashoffset: -offsetAccumulator,
+      onMouseEnter: (e: React.MouseEvent) => {
+        const rect = (e.target as Element).getBoundingClientRect();
+        setTooltipData({
+          show: true,
+          name: categoryName,
+          amount,
+          x: rect.left + rect.width / 2,
+          y: rect.top - 10
+        });
+      },
+      onMouseMove: (e: React.MouseEvent) => {
+        setTooltipData(prev => ({
+          ...prev,
+          x: e.clientX,
+          y: e.clientY - 30
+        }));
+      },
+      onMouseLeave: () => setTooltipData({ ...tooltipData, show: false })
+    };
+    offsetAccumulator += val;
+    return props;
+  };
+
+  const foodProps = getDonutProps(categoryTotals.food, 'Food');
+  const shopProps = getDonutProps(categoryTotals.shopping, 'Shopping');
+  const travelProps = getDonutProps(categoryTotals.travel, 'Travel');
+  const otherProps = getDonutProps(categoryTotals.others, 'Others');
+
+  // Dynamic Line Chart (Last 7 Days)
+  const last7DaysData = expenses.reduce((acc: number[], exp) => {
+    const today = new Date();
+    const expDate = new Date(exp.date || exp.createdAt);
+    const diffTime = today.getTime() - expDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    if (diffDays >= 0 && diffDays <= 7) {
+      let dayIdx = expDate.getDay() - 1; // Mon=0, Sun=6
+      if (dayIdx === -1) dayIdx = 6;
+      acc[dayIdx] = (acc[dayIdx] || 0) + exp.amount;
+    }
+    return acc;
+  }, [0, 0, 0, 0, 0, 0, 0]);
+
+  const maxSpending = Math.max(...last7DaysData, 1);
+  const getPathData = (data: number[]) => {
+    let path = "";
+    let areaPath = "";
+    for (let i = 0; i < 7; i++) {
+       const x = i * 100;
+       const y = 200 - (data[i] / maxSpending) * 150;
+       if (i === 0) {
+           path += `M 0 ${y}`;
+           areaPath += `M 0 ${y}`;
+       } else {
+           const prevX = (i - 1) * 100;
+           const prevY = 200 - (data[i - 1] / maxSpending) * 150;
+           const cp1X = prevX + 50;
+           const cp2X = x - 50;
+           path += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
+           areaPath += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
+       }
+    }
+    areaPath += ` L 600 250 L 0 250 Z`;
+    return { path, areaPath };
+  };
+
+  const { path: linePath, areaPath } = getPathData(last7DaysData);
+
   if(loading) {
     return <div>Loading dashboard...</div>;
   }
 
   return (
     <>
+      {tooltipData.show && (
+        <div style={{
+          position: 'fixed',
+          top: tooltipData.y,
+          left: tooltipData.x,
+          transform: 'translate(-50%, -100%)',
+          backgroundColor: '#1f2937',
+          color: 'white',
+          padding: '6px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          pointerEvents: 'none',
+          zIndex: 1000,
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+        }}>
+          <div style={{ fontWeight: 600 }}>{tooltipData.name}</div>
+          <div>₹{tooltipData.amount}</div>
+        </div>
+      )}
       {/* Stats Grid */}
       <div className="stats-grid">
             <div className="stat-card">
@@ -282,10 +387,10 @@ export function DashboardOverview() {
               </div>
               <p className="stat-value">₹{totalBudget}</p>
               <div className="stat-footer">
-                <div className="mini-progress">
-                  <div className="mini-progress-bar" style={{ width: `${Math.min(100, (totalExpenses/totalBudget)*100)}%` }}></div>
+                <div className="mini-progress" style={{ flex: 1, marginRight: '8px' }}>
+                  <div className="mini-progress-bar" style={{ width: `${utilizationPercent}%` }}></div>
                 </div>
-                <span className="stat-period">Budget Utilization</span>
+                <span className="stat-period">Budget Used: {utilizationPercent.toFixed(0)}%</span>
               </div>
             </div>
 
@@ -332,21 +437,19 @@ export function DashboardOverview() {
                   <line x1="0" y1="200" x2="600" y2="200" stroke="#f3f4f6" strokeWidth="1" />
 
                   {/* Area fill */}
-                  <path d="M 0 180 Q 100 160, 150 140 T 300 100 T 450 120 T 600 80 L 600 250 L 0 250 Z"
+                  <path d={areaPath}
                     fill="url(#area-gradient)" opacity="0.3" />
 
                   {/* Line */}
-                  <path d="M 0 180 Q 100 160, 150 140 T 300 100 T 450 120 T 600 80"
+                  <path d={linePath}
                     stroke="url(#line-gradient)"
                     strokeWidth="3"
                     fill="none" />
 
                   {/* Data points */}
-                  <circle cx="0" cy="180" r="5" fill="#6366f1" />
-                  <circle cx="150" cy="140" r="5" fill="#6366f1" />
-                  <circle cx="300" cy="100" r="5" fill="#6366f1" />
-                  <circle cx="450" cy="120" r="5" fill="#6366f1" />
-                  <circle cx="600" cy="80" r="5" fill="#6366f1" />
+                  {last7DaysData.map((amount, i) => (
+                    <circle key={i} cx={i * 100} cy={200 - (amount / maxSpending) * 150} r="5" fill="#6366f1" />
+                  ))}
 
                   <defs>
                     <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -371,25 +474,30 @@ export function DashboardOverview() {
               </div>
             </div>
 
-            {/* Category Distribution */}
             <div className="card">
               <div className="card-header-section">
                 <div>
                   <h3 className="card-title">Category Distribution</h3>
-                  <p className="card-subtitle">This month's breakdown</p>
+                  <p className="card-subtitle">All time breakdown</p>
                 </div>
               </div>
-              <div className="category-chart">
-                <div className="donut-chart">
-                  <svg viewBox="0 0 200 200">
+              <div className="category-chart" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '3rem', marginTop: '1rem', marginBottom: '1rem' }}>
+                <div className="donut-chart" style={{ width: '220px', height: '220px', flexShrink: 0 }}>
+                  <svg viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
                     <circle cx="100" cy="100" r="80" fill="none" stroke="#EEF2FF" strokeWidth="40" />
-                    <circle cx="100" cy="100" r="80" fill="none" stroke="#6366F1" strokeWidth="40"
-                      strokeDasharray="251.2 251.2" strokeDashoffset="62.8" transform="rotate(-90 100 100)" />
-                    <circle cx="100" cy="100" r="80" fill="none" stroke="#8B5CF6" strokeWidth="40"
-                      strokeDasharray="150.72 401.92" strokeDashoffset="-188.4" transform="rotate(-90 100 100)" />
-                    <circle cx="100" cy="100" r="80" fill="none" stroke="#EC4899" strokeWidth="40"
-                      strokeDasharray="100.48 452.16" strokeDashoffset="-339.12" transform="rotate(-90 100 100)" />
-                    <text x="100" y="95" textAnchor="middle" fontSize="24" fontWeight="700" fill="#1f2937">₹32,450</text>
+                    {totalExpenses > 0 && (
+                      <>
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="#6366F1" strokeWidth="40"
+                          {...foodProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="#8B5CF6" strokeWidth="40"
+                          {...shopProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="#EC4899" strokeWidth="40"
+                          {...travelProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="#F59E0B" strokeWidth="40"
+                          {...otherProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+                      </>
+                    )}
+                    <text x="100" y="95" textAnchor="middle" fontSize="24" fontWeight="700" fill="#1f2937">₹{totalExpenses}</text>
                     <text x="100" y="115" textAnchor="middle" fontSize="12" fill="#9ca3af">Total Spent</text>
                   </svg>
                 </div>
@@ -397,22 +505,22 @@ export function DashboardOverview() {
                   <div className="legend-item">
                     <span className="legend-dot" style={{ background: "#6366F1" }}></span>
                     <span className="legend-label">Food</span>
-                    <span className="legend-value">₹8,240</span>
+                    <span className="legend-value">₹{categoryTotals.food}</span>
                   </div>
                   <div className="legend-item">
                     <span className="legend-dot" style={{ background: "#8B5CF6" }}></span>
                     <span className="legend-label">Shopping</span>
-                    <span className="legend-value">₹10,840</span>
+                    <span className="legend-value">₹{categoryTotals.shopping}</span>
                   </div>
                   <div className="legend-item">
                     <span className="legend-dot" style={{ background: "#EC4899" }}></span>
                     <span className="legend-label">Travel</span>
-                    <span className="legend-value">₹5,670</span>
+                    <span className="legend-value">₹{categoryTotals.travel}</span>
                   </div>
                   <div className="legend-item">
                     <span className="legend-dot" style={{ background: "#F59E0B" }}></span>
                     <span className="legend-label">Others</span>
-                    <span className="legend-value">₹7,700</span>
+                    <span className="legend-value">₹{categoryTotals.others}</span>
                   </div>
                 </div>
               </div>
@@ -464,7 +572,33 @@ export function DashboardOverview() {
                 <h3 className="card-title">Budget Alerts</h3>
               </div>
               <div className="alerts-list">
-                <div className="alert-item danger">
+                {utilizationPercent > 100 && (
+                  <div className="alert-item danger">
+                    <div className="alert-icon-circle danger">
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <div className="alert-content-small">
+                      <p className="alert-title-small">Total Budget Exceeded!</p>
+                      <p className="alert-text-small">You've exceeded your total budget by ₹{totalExpenses - totalBudget}.</p>
+                    </div>
+                  </div>
+                )}
+                {utilizationPercent >= 80 && utilizationPercent <= 100 && (
+                  <div className="alert-item warning">
+                    <div className="alert-icon-circle warning">
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <div className="alert-content-small">
+                      <p className="alert-title-small">Warning: High Budget Utilization</p>
+                      <p className="alert-text-small">Warning: You are close to exceeding your budget. ({utilizationPercent.toFixed(0)}% used)</p>
+                    </div>
+                  </div>
+                )}
+                <div className="alert-item warning">
                   <div className="alert-icon-circle danger">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -516,14 +650,61 @@ export function DashboardOverview() {
 }
 
 export function DashboardTransactions() {
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        const user = getUser();
+        if (!user) return;
+        const res = await fetch(`http://localhost:5000/api/expenses?userId=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setExpenses(data);
+        }
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExpenses();
+  }, []);
+
+  const getEmoji = (category: string) => {
+    switch (category) {
+      case 'food': return '🍔';
+      case 'travel': return '🚕';
+      case 'shopping': return '🛍️';
+      case 'bills': return '📄';
+      case 'entertainment': return '🎬';
+      case 'healthcare': return '🏥';
+      case 'education': return '📚';
+      default: return '💼';
+    }
+  };
+
+  const getCategoryTheme = (category: string) => {
+    switch(category) {
+      case 'food': return 'food';
+      case 'travel': return 'travel';
+      case 'shopping': return 'shopping';
+      case 'bills': return 'bills';
+      case 'entertainment': return 'entertainment';
+      default: return 'other';
+    }
+  };
+
+  if (loading) {
+    return <div>Loading transactions...</div>;
+  }
+
   return (
     <div className="dashboard-grid-3">
       <div className="card col-span-2">
         <div className="card-header-section">
-          <h3 className="card-title">Recent Transactions</h3>
-          <a href="#" className="view-all-link">
-            View all
-          </a>
+          <h3 className="card-title">All Transactions</h3>
         </div>
         <div className="transactions-table">
           <table>
@@ -537,76 +718,24 @@ export function DashboardTransactions() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>
-                  <div className="transaction-desc">
-                    <span className="transaction-emoji">🍔</span>
-                    <span>Dinner at Olive Garden</span>
-                  </div>
-                </td>
-                <td>
-                  <span className="category-badge food">Food</span>
-                </td>
-                <td>Mar 9, 2026</td>
-                <td>Credit Card</td>
-                <td className="amount">₹850</td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="transaction-desc">
-                    <span className="transaction-emoji">🚕</span>
-                    <span>Uber to Airport</span>
-                  </div>
-                </td>
-                <td>
-                  <span className="category-badge travel">Travel</span>
-                </td>
-                <td>Mar 8, 2026</td>
-                <td>UPI</td>
-                <td className="amount">₹420</td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="transaction-desc">
-                    <span className="transaction-emoji">🛍️</span>
-                    <span>Amazon Shopping</span>
-                  </div>
-                </td>
-                <td>
-                  <span className="category-badge shopping">Shopping</span>
-                </td>
-                <td>Mar 8, 2026</td>
-                <td>Debit Card</td>
-                <td className="amount">₹2,340</td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="transaction-desc">
-                    <span className="transaction-emoji">📄</span>
-                    <span>Electricity Bill</span>
-                  </div>
-                </td>
-                <td>
-                  <span className="category-badge bills">Bills</span>
-                </td>
-                <td>Mar 7, 2026</td>
-                <td>Net Banking</td>
-                <td className="amount">₹1,890</td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="transaction-desc">
-                    <span className="transaction-emoji">🎬</span>
-                    <span>Movie Tickets</span>
-                  </div>
-                </td>
-                <td>
-                  <span className="category-badge entertainment">Entertainment</span>
-                </td>
-                <td>Mar 6, 2026</td>
-                <td>UPI</td>
-                <td className="amount">₹600</td>
-              </tr>
+              {expenses.length > 0 ? expenses.map((exp) => (
+                <tr key={exp._id}>
+                  <td>
+                    <div className="transaction-desc">
+                      <span className="transaction-emoji">{getEmoji(exp.category)}</span>
+                      <span>{exp.description || 'No Description'}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span>
+                  </td>
+                  <td>{new Date(exp.date || exp.createdAt).toLocaleDateString()}</td>
+                  <td>{exp.paymentMethod || 'Cash'}</td>
+                  <td className="amount">₹{exp.amount}</td>
+                </tr>
+              )) : (
+                <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

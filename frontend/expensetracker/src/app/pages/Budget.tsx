@@ -56,9 +56,10 @@ export default function Budget() {
       const user = getUser();
       if (!user) return navigate("/login");
 
+      const fetchOpts = { cache: "no-store" as RequestCache };
       const [expenseRes, budgetRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`),
-        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`)
+        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
+        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts)
       ]);
 
       if (expenseRes.ok && budgetRes.ok) {
@@ -228,7 +229,7 @@ export default function Budget() {
           </a>
         </nav>
         <div className="sidebar-footer">
-          <Link to="/admin" className="sidebar-link">
+          <Link to="/profile" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M10 11C12.2091 11 14 9.20914 14 7C14 4.79086 12.2091 3 10 3C7.79086 3 6 4.79086 6 7C6 9.20914 7.79086 11 10 11Z" stroke="currentColor" strokeWidth="1.5" />
               <path d="M3 17V16C3 14.3431 4.34315 13 6 13H14C15.6569 13 17 14.3431 17 16V17" stroke="currentColor" strokeWidth="1.5" />
@@ -268,9 +269,9 @@ export default function Budget() {
             </button>
             {/* Username Panel */}
             <div className="user-panel">
-              <div className="user-avatar">RK</div>
+              <div className="user-avatar">{getUser()?.firstName?.[0] || 'U'}{getUser()?.lastName?.[0] || ''}</div>
               <div className="user-info">
-                <p className="user-name">Rajesh Kumar</p>
+                <p className="user-name">{getUser()?.firstName} {getUser()?.lastName}</p>
                 <p className="user-role">Personal Account</p>
               </div>
             </div>
