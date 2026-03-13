@@ -7,7 +7,10 @@ const expenseSchema = new mongoose.Schema({
   },
   category: String,
   amount: Number,
-  description: String
-});
+  description: String,
+  date: Date,
+  paymentMethod: String,
+  isRecurring: Boolean
+}, { timestamps: true });
 
 module.exports = mongoose.model("Expense", expenseSchema);

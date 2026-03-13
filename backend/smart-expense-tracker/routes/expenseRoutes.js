@@ -9,7 +9,10 @@ router.post("/", addExpense);
 // GET all expenses
 router.get("/", async (req, res) => {
   try {
-    const expenses = await Expense.find();
+    const { userId } = req.query;
+    const filter = userId ? { userId } : {};
+    // Sort by descending date so recent transactions are fetched first
+    const expenses = await Expense.find(filter).sort({ date: -1 });
     res.json(expenses);
   } catch (err) {
     res.status(500).json(err);
