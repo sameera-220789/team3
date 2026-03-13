@@ -12,20 +12,30 @@ export default function AddExpense() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
+
 
   const fetchRecentExpenses = async () => {
     try {
       const user = getUser();
       if (!user) return;
-      const res = await fetch(`http://localhost:5000/api/expenses?userId=${user.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setRecentExpenses(data);
-      }
+      const fetchOpts = { cache: "no-store" as RequestCache };
+      const [expRes, budRes, alertRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
+        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts),
+        fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
+      ]);
+      
+      if (expRes.ok) setRecentExpenses(await expRes.json());
+      if (budRes.ok) setBudgets(await budRes.json());
+      if (alertRes.ok) setAlerts(await alertRes.json());
+      
     } catch (error) {
-      console.error("Error fetching recent expenses:", error);
+      console.error("Error fetching data:", error);
     }
   };
+
 
   useEffect(() => {
     fetchRecentExpenses();
@@ -177,15 +187,20 @@ export default function AddExpense() {
                     <div className="amount-input-wrapper">
                       <span className="currency-symbol">₹</span>
                       <input
-                        type="number"
+                        type="text"
                         id="amount"
                         className="form-input amount-input"
                         placeholder="0.00"
-                        step="0.01"
                         required
                         value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                            setAmount(val);
+                          }
+                        }}
                       />
+
                     </div>
                   </div>
 
@@ -385,7 +400,8 @@ export default function AddExpense() {
                     <div className="summary-stats">
                       <div className="summary-stat">
                         <span className="summary-label">Total Spent</span>
-                        <span className="summary-value primary">₹{todayTotal}</span>
+                        <span className="summary-value primary">₹{todayTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+
                       </div>
                       <div className="summary-divider"></div>
                       <div className="summary-stat">
@@ -402,7 +418,8 @@ export default function AddExpense() {
                               <span className="breakdown-icon">{getEmoji(cat)}</span>
                               <span className="breakdown-name" style={{textTransform: 'capitalize'}}>{cat}</span>
                             </div>
-                            <span className="breakdown-amount">₹{String(amt)}</span>
+                            <span className="breakdown-amount">₹{amt.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+
                           </div>
                         ))}
                       </div>
@@ -439,7 +456,8 @@ export default function AddExpense() {
                           <p className="transaction-name">{exp.description ? String(exp.description) : `${String(exp.category)} expense`}</p>
                           <p className="transaction-time">{new Date(exp.date || exp.createdAt).toLocaleDateString()}</p>
                         </div>
-                        <span className="transaction-amount">₹{String(exp.amount)}</span>
+                        <span className="transaction-amount">₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+
                       </div>
                     );
                   }) : (
@@ -448,19 +466,39 @@ export default function AddExpense() {
                 </div>
               </div>
 
-              {/* Budget Alert */}
-              <div className="alert-card warning">
-                <div className="alert-icon">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div className="alert-content">
-                  <h4 className="alert-title">Budget Alert</h4>
-                  <p className="alert-text">You've used 85% of your Food budget this month.</p>
-                  <Link to="/budget" className="alert-link">View Budget →</Link>
-                </div>
-              </div>
+              {/* Budget Alert (Dynamic logic) */}
+              {(() => {
+                const totalSpent = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
+                const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
+                const utilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+                
+                // Get most relevant alert
+                const latestAlert = alerts[0];
+                
+                return (
+                  <div className={`alert-card ${utilization >= 100 ? 'danger' : utilization >= 80 ? 'warning' : 'info'}`}>
+                    <div className="alert-icon">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <div className="alert-content">
+                      <h4 className="alert-title">{latestAlert ? 'Budget Alert' : 'Budget Status'}</h4>
+                      <p className="alert-text">
+                        {latestAlert ? latestAlert.message : 
+                         totalBudget > 0 ? `You've used ${utilization.toFixed(0)}% of your total budget.` : 
+                         "Start by setting a budget to track your spending limits."
+                        }
+                      </p>
+                      <Link to="/budget" className="alert-link">
+                        {totalBudget > 0 ? "View Details →" : "Set Budget →"}
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })()}
+
+
             </div>
           </div>
         </div>

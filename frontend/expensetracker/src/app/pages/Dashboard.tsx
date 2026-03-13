@@ -161,7 +161,9 @@ export default function Dashboard() {
 export function DashboardOverview() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [budgets, setBudgets] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -169,17 +171,21 @@ export function DashboardOverview() {
         const user = getUser();
         if(!user) return;
         const fetchOpts = { cache: "no-store" as RequestCache };
-        const [expenseRes, budgetRes] = await Promise.all([
+        const [expenseRes, budgetRes, alertRes] = await Promise.all([
           fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
-          fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts)
+          fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts),
+          fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
         ]);
         
-        if (expenseRes.ok && budgetRes.ok) {
+        if (expenseRes.ok && budgetRes.ok && alertRes.ok) {
           const expenseData = await expenseRes.json();
           const budgetData = await budgetRes.json();
+          const alertData = await alertRes.json();
           setExpenses(expenseData);
           setBudgets(budgetData);
+          setAlerts(alertData);
         }
+
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -368,8 +374,9 @@ export function DashboardOverview() {
                 <span className="stat-label">Total Balance (Remaining)</span>
               </div>
               <p className="stat-value" style={{ color: isOverBudget ? '#ef4444' : undefined }}>
-                {isOverBudget ? '-' : ''}₹{Math.abs(remainingBudget).toLocaleString('en-IN')}
+                {isOverBudget ? '-' : ''}₹{Math.abs(remainingBudget).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
               </p>
+
               <div className="stat-footer">
                 {isOverBudget ? (
                   <span className="stat-change negative" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -400,7 +407,8 @@ export function DashboardOverview() {
                 </div>
                 <span className="stat-label">Total Expenses</span>
               </div>
-              <p className="stat-value">₹{totalExpenses}</p>
+              <p className="stat-value">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+
               <div className="stat-footer">
                 <span className="stat-change negative">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -423,7 +431,8 @@ export function DashboardOverview() {
                 </div>
                 <span className="stat-label">Total Allocated Budgets</span>
               </div>
-              <p className="stat-value">₹{totalBudget}</p>
+              <p className="stat-value">₹{totalBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+
               <div className="stat-footer">
                 <div className="mini-progress" style={{ flex: 1, marginRight: '8px' }}>
                   <div className="mini-progress-bar" style={{ width: `${utilizationPercent}%` }}></div>
@@ -528,8 +537,9 @@ export function DashboardOverview() {
                       <circle key={cat} cx="100" cy="100" r="80" fill="none" stroke={color} strokeWidth="40"
                         {...props} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease', cursor: 'pointer' }} />
                     ))}
-                    <text x="100" y="95" textAnchor="middle" fontSize="22" fontWeight="700" fill="#1f2937">₹{totalExpenses}</text>
+                    <text x="100" y="95" textAnchor="middle" fontSize="22" fontWeight="700" fill="#1f2937">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</text>
                     <text x="100" y="115" textAnchor="middle" fontSize="12" fill="#9ca3af">Total Spent</text>
+
                   </svg>
                 </div>
                 {/* Legend below chart — only when expenses exist */}
@@ -547,7 +557,8 @@ export function DashboardOverview() {
                       <div className="legend-item" key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
                         <span className="legend-dot" style={{ background: getCategoryColor(cat, idx), flexShrink: 0 }}></span>
                         <span className="legend-label" style={{ textTransform: 'capitalize', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat}</span>
-                        <span className="legend-value" style={{ flexShrink: 0 }}>₹{amt}</span>
+                        <span className="legend-value" style={{ flexShrink: 0 }}>₹{amt.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+
                       </div>
                     ))}
                   </div>
@@ -586,7 +597,8 @@ export function DashboardOverview() {
                         <td><span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span></td>
                         <td>{new Date(exp.date || exp.createdAt).toLocaleDateString()}</td>
                         <td>{exp.paymentMethod || 'Cash'}</td>
-                        <td className="amount">₹{exp.amount}</td>
+                        <td className="amount">₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+
                       </tr>
                     )) : (
                       <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
@@ -601,76 +613,22 @@ export function DashboardOverview() {
                 <h3 className="card-title">Budget Alerts</h3>
               </div>
               <div className="alerts-list">
-                {utilizationPercent > 100 && (
-                  <div className="alert-item danger">
-                    <div className="alert-icon-circle danger">
+                {alerts.length > 0 ? alerts.slice(0, 8).map((alert) => (
+                  <div key={alert._id} className={`alert-item ${alert.threshold === 100 || alert.type === 'limit_reached' ? 'danger' : 'warning'}`}>
+                    <div className={`alert-icon-circle ${alert.threshold === 100 || alert.type === 'limit_reached' ? 'danger' : 'warning'}`}>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                     </div>
                     <div className="alert-content-small">
-                      <p className="alert-title-small">Total Budget Exceeded!</p>
-                      <p className="alert-text-small">You've exceeded your total budget by ₹{totalExpenses - totalBudget}.</p>
+                      <p className="alert-title-small">{alert.message}</p>
+                      <p className="alert-text-small">{new Date(alert.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
+                )) : (
+                  <div style={{textAlign: "center", padding: "1rem", color: "#6B7280"}}>No recent budget alerts.</div>
                 )}
-                {utilizationPercent >= 80 && utilizationPercent <= 100 && (
-                  <div className="alert-item warning">
-                    <div className="alert-icon-circle warning">
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                    <div className="alert-content-small">
-                      <p className="alert-title-small">Warning: High Budget Utilization</p>
-                      <p className="alert-text-small">Warning: You are close to exceeding your budget. ({utilizationPercent.toFixed(0)}% used)</p>
-                    </div>
-                  </div>
-                )}
-                <div className="alert-item warning">
-                  <div className="alert-icon-circle danger">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div className="alert-content-small">
-                    <p className="alert-title-small">Bills Budget Exceeded</p>
-                    <p className="alert-text-small">₹200 over limit</p>
-                  </div>
-                </div>
-                <div className="alert-item warning">
-                  <div className="alert-icon-circle warning">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div className="alert-content-small">
-                    <p className="alert-title-small">Shopping Near Limit</p>
-                    <p className="alert-text-small">90% of budget used</p>
-                  </div>
-                </div>
-                <div className="alert-item success">
-                  <div className="alert-icon-circle success">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M6 10L9 13L14 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div className="alert-content-small">
-                    <p className="alert-title-small">Food Budget On Track</p>
-                    <p className="alert-text-small">82% used with 15 days left</p>
-                  </div>
-                </div>
-                <div className="alert-item info">
-                  <div className="alert-icon-circle info">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <path d="M10 11V15M10 7H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div className="alert-content-small">
-                    <p className="alert-title-small">Recurring Bill Due</p>
-                    <p className="alert-text-small">Netflix - Mar 15</p>
-                  </div>
-                </div>
+
               </div>
             </div>
           </div>

@@ -1,61 +1,101 @@
 const Expense = require("../models/Expense");
 const User = require("../models/User");
 const Budget = require("../models/Budget");
+const Alert = require("../models/Alert");
 const sendEmail = require("../config/email");
 
 // Add Expense
 exports.addExpense = async (req, res) => {
   try {
+    const { category, amount, description, userId, date, paymentMethod, isRecurring } = req.body;
+    const expenseAmount = Number(amount);
 
-    const { category, amount, description, userId } = req.body;
+    if (isNaN(expenseAmount) || expenseAmount <= 0) {
+      return res.status(400).json({ message: "Invalid expense amount" });
+    }
 
+    // 1. Fetch User Data
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 2. Fetch all expenses and budgets for calculations
+    const expenses = await Expense.find({ userId });
+    const budgets = await Budget.find({ userId });
+
+    const totalSpentBefore = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+    const totalBudget = budgets.reduce((sum, b) => sum + Number(b.limit), 0);
+    const remainingBudget = totalBudget - totalSpentBefore;
+
+    // 3. Category-wise Budget Protection
+    const categoryBudget = budgets.find(b => b.category.toLowerCase() === category.toLowerCase());
+    if (categoryBudget) {
+      const categorySpentBefore = expenses
+        .filter(exp => exp.category.toLowerCase() === category.toLowerCase())
+        .reduce((sum, exp) => sum + Number(exp.amount), 0);
+      
+      if (categorySpentBefore + expenseAmount > categoryBudget.limit) {
+        return res.status(400).json({ message: "Category budget limit exceeded." });
+      }
+    }
+
+    // 4. Prevent Budget From Going Negative / Prevent Addition After Limit
+    if (totalBudget > 0 && totalSpentBefore + expenseAmount > totalBudget) {
+      return res.status(400).json({ message: "Cannot add expense. Budget limit exceeded." });
+    }
+
+    // 5. Save Expense
     const expense = new Expense({
       userId,
       category,
-      amount,
-      description
+      amount: expenseAmount,
+      description,
+      date,
+      paymentMethod,
+      isRecurring
     });
 
     const savedExpense = await expense.save();
 
-    console.log("Expense added");
+    // 6. Milestone Check (Alerts)
+    const totalSpentAfter = totalSpentBefore + expenseAmount;
+    const usagePercent = totalBudget > 0 ? (totalSpentAfter / totalBudget) * 100 : 0;
 
-    // USER EXPENSES ONLY
-    const expenses = await Expense.find({ userId });
+    let alertMsg = "";
+    let threshold = 0;
 
-    let totalExpenses = 0;
+    if (usagePercent >= 100) {
+      alertMsg = "Your budget limit has been reached.";
+      threshold = 100;
+    } else if (usagePercent >= 90) {
+      alertMsg = "Warning: You have used 90% of your budget.";
+      threshold = 90;
+    } else if (usagePercent >= 50) {
+      alertMsg = "You have used 50% of your budget.";
+      threshold = 50;
+    }
 
-    expenses.forEach((exp) => {
-      totalExpenses += Number(exp.amount);
-    });
+    if (alertMsg) {
+      // Check if we already sent this specific milestone alert recently (to avoid spam)
+      // For now, just send it and store it or implement a more complex check
+      const newAlert = new Alert({
+        userId,
+        type: "milestone",
+        threshold,
+        message: alertMsg,
+        category: category
+      });
+      await newAlert.save();
 
-    // USER BUDGET ONLY
-    const budgets = await Budget.find({ userId });
-
-    let totalBudget = 0;
-
-    budgets.forEach((b) => {
-      totalBudget += Number(b.limit);
-    });
-
-    // current user
-    const user = await User.findById(userId);
-
-    // Budget exceed check
-    if (totalExpenses > totalBudget) {
-
-      if (user) {
-
+      // Send Email
+      if (user.email) {
         await sendEmail(
           user.email,
-          "Budget Exceeded Alert",
-          `Warning! Your total expenses ₹${totalExpenses} exceeded your budget ₹${totalBudget}.`
+          "Budget Alert",
+          alertMsg + ` Total Spent: ₹${totalSpentAfter} / ₹${totalBudget}`
         );
-
-        console.log("Budget exceeded mail sent");
-
       }
-
     }
 
     res.json(savedExpense);
