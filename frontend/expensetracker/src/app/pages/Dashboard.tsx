@@ -187,12 +187,17 @@ export function DashboardOverview() {
       }
     };
     fetchData();
+    // Poll every 30 seconds for dynamic updates after adding expenses
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
   const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
-  const remainingBudget = Math.max(0, totalBudget - totalExpenses);
+  // Do NOT clamp to 0 — show real value so over-budget is visible
+  const remainingBudget = totalBudget - totalExpenses;
   const utilizationPercent = totalBudget === 0 ? 0 : Math.min(100, (totalExpenses/totalBudget)*100);
+  const isOverBudget = remainingBudget < 0;
 
   const getEmoji = (category: string) => {
     switch (category) {
@@ -218,11 +223,31 @@ export function DashboardOverview() {
     }
   };
 
-  const categoryTotals = expenses.reduce((acc, exp) => {
-    const cat = ['food', 'shopping', 'travel'].includes(exp.category) ? exp.category : 'others';
-    acc[cat] = (acc[cat] || 0) + exp.amount;
+  // Dynamically compute totals per unique category from actual expense data
+  const categoryTotals: Record<string, number> = expenses.reduce((acc: Record<string, number>, exp) => {
+    const cat = exp.category ? exp.category.toLowerCase() : 'others';
+    acc[cat] = (acc[cat] || 0) + Number(exp.amount);
     return acc;
-  }, { food: 0, shopping: 0, travel: 0, others: 0 });
+  }, {});
+
+  // Color palette for dynamic categories
+  const categoryColors: Record<string, string> = {
+    food: '#6366F1',
+    shopping: '#8B5CF6',
+    travel: '#EC4899',
+    bills: '#F59E0B',
+    entertainment: '#10B981',
+    healthcare: '#3B82F6',
+    education: '#F97316',
+    others: '#94A3B8'
+  };
+  const getCategoryColor = (cat: string, idx: number) => {
+    const fallbacks = ['#6366F1','#8B5CF6','#EC4899','#F59E0B','#10B981','#3B82F6','#F97316','#94A3B8'];
+    return categoryColors[cat] || fallbacks[idx % fallbacks.length];
+  };
+
+  // Only include categories that have expenses > 0
+  const activeCategories = Object.entries(categoryTotals).filter(([, amt]) => amt > 0);
 
   const C = 502.65; // Circumference for r=80
   let offsetAccumulator = 0;
@@ -236,13 +261,12 @@ export function DashboardOverview() {
       strokeDasharray: `${val} ${C}`,
       strokeDashoffset: -offsetAccumulator,
       onMouseEnter: (e: React.MouseEvent) => {
-        const rect = (e.target as Element).getBoundingClientRect();
         setTooltipData({
           show: true,
-          name: categoryName,
+          name: categoryName.charAt(0).toUpperCase() + categoryName.slice(1),
           amount,
-          x: rect.left + rect.width / 2,
-          y: rect.top - 10
+          x: e.clientX,
+          y: e.clientY - 30
         });
       },
       onMouseMove: (e: React.MouseEvent) => {
@@ -252,16 +276,19 @@ export function DashboardOverview() {
           y: e.clientY - 30
         }));
       },
-      onMouseLeave: () => setTooltipData({ ...tooltipData, show: false })
+      onMouseLeave: () => setTooltipData(prev => ({ ...prev, show: false }))
     };
     offsetAccumulator += val;
     return props;
   };
 
-  const foodProps = getDonutProps(categoryTotals.food, 'Food');
-  const shopProps = getDonutProps(categoryTotals.shopping, 'Shopping');
-  const travelProps = getDonutProps(categoryTotals.travel, 'Travel');
-  const otherProps = getDonutProps(categoryTotals.others, 'Others');
+  // Pre-compute donut segment props for each active category
+  const segmentProps = activeCategories.map(([cat, amt]) => ({
+    cat,
+    amt,
+    color: getCategoryColor(cat, activeCategories.findIndex(([c]) => c === cat)),
+    props: getDonutProps(amt, cat)
+  }));
 
   // Dynamic Line Chart (Last 7 Days)
   const last7DaysData = expenses.reduce((acc: number[], exp) => {
@@ -331,7 +358,7 @@ export function DashboardOverview() {
       <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-header">
-                <div className="stat-icon-wrapper blue">
+                <div className={`stat-icon-wrapper ${isOverBudget ? 'red' : 'blue'}`}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -340,14 +367,25 @@ export function DashboardOverview() {
                 </div>
                 <span className="stat-label">Total Balance (Remaining)</span>
               </div>
-              <p className="stat-value">₹{remainingBudget}</p>
+              <p className="stat-value" style={{ color: isOverBudget ? '#ef4444' : undefined }}>
+                {isOverBudget ? '-' : ''}₹{Math.abs(remainingBudget).toLocaleString('en-IN')}
+              </p>
               <div className="stat-footer">
-                <span className="stat-change positive">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 12V4M4 8L8 4L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  Calculated Output
-                </span>
+                {isOverBudget ? (
+                  <span className="stat-change negative" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 4V12M4 8L8 12L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    Over Budget
+                  </span>
+                ) : (
+                  <span className="stat-change positive">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 12V4M4 8L8 4L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    Calculated Output
+                  </span>
+                )}
                 <span className="stat-period">from budgets</span>
               </div>
             </div>
@@ -481,48 +519,39 @@ export function DashboardOverview() {
                   <p className="card-subtitle">All time breakdown</p>
                 </div>
               </div>
-              <div className="category-chart" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '3rem', marginTop: '1rem', marginBottom: '1rem' }}>
-                <div className="donut-chart" style={{ width: '220px', height: '220px', flexShrink: 0 }}>
-                  <svg viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+              <div className="category-chart" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', marginTop: '1rem', marginBottom: '0.5rem' }}>
+                {/* Donut chart centred */}
+                <div className="donut-chart" style={{ width: '180px', height: '180px', flexShrink: 0 }}>
+                  <svg viewBox="0 0 200 200" style={{ overflow: 'visible', width: '100%', height: '100%' }}>
                     <circle cx="100" cy="100" r="80" fill="none" stroke="#EEF2FF" strokeWidth="40" />
-                    {totalExpenses > 0 && (
-                      <>
-                        <circle cx="100" cy="100" r="80" fill="none" stroke="#6366F1" strokeWidth="40"
-                          {...foodProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
-                        <circle cx="100" cy="100" r="80" fill="none" stroke="#8B5CF6" strokeWidth="40"
-                          {...shopProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
-                        <circle cx="100" cy="100" r="80" fill="none" stroke="#EC4899" strokeWidth="40"
-                          {...travelProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
-                        <circle cx="100" cy="100" r="80" fill="none" stroke="#F59E0B" strokeWidth="40"
-                          {...otherProps} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
-                      </>
-                    )}
-                    <text x="100" y="95" textAnchor="middle" fontSize="24" fontWeight="700" fill="#1f2937">₹{totalExpenses}</text>
+                    {totalExpenses > 0 && segmentProps.map(({ cat, color, props }) => (
+                      <circle key={cat} cx="100" cy="100" r="80" fill="none" stroke={color} strokeWidth="40"
+                        {...props} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease', cursor: 'pointer' }} />
+                    ))}
+                    <text x="100" y="95" textAnchor="middle" fontSize="22" fontWeight="700" fill="#1f2937">₹{totalExpenses}</text>
                     <text x="100" y="115" textAnchor="middle" fontSize="12" fill="#9ca3af">Total Spent</text>
                   </svg>
                 </div>
-                <div className="category-legend">
-                  <div className="legend-item">
-                    <span className="legend-dot" style={{ background: "#6366F1" }}></span>
-                    <span className="legend-label">Food</span>
-                    <span className="legend-value">₹{categoryTotals.food}</span>
+                {/* Legend below chart — only when expenses exist */}
+                {expenses.length > 0 && activeCategories.length > 0 && (
+                  <div className="category-legend" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '0.5rem 1.5rem',
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    background: '#f9fafb',
+                    borderRadius: '0.5rem'
+                  }}>
+                    {activeCategories.map(([cat, amt], idx) => (
+                      <div className="legend-item" key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                        <span className="legend-dot" style={{ background: getCategoryColor(cat, idx), flexShrink: 0 }}></span>
+                        <span className="legend-label" style={{ textTransform: 'capitalize', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat}</span>
+                        <span className="legend-value" style={{ flexShrink: 0 }}>₹{amt}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="legend-item">
-                    <span className="legend-dot" style={{ background: "#8B5CF6" }}></span>
-                    <span className="legend-label">Shopping</span>
-                    <span className="legend-value">₹{categoryTotals.shopping}</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-dot" style={{ background: "#EC4899" }}></span>
-                    <span className="legend-label">Travel</span>
-                    <span className="legend-value">₹{categoryTotals.travel}</span>
-                  </div>
-                  <div className="legend-item">
-                    <span className="legend-dot" style={{ background: "#F59E0B" }}></span>
-                    <span className="legend-label">Others</span>
-                    <span className="legend-value">₹{categoryTotals.others}</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

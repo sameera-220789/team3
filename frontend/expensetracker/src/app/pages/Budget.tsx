@@ -49,6 +49,9 @@ export default function Budget() {
 
   useEffect(() => {
     fetchBudgetsData();
+    // Auto-refresh every 30 seconds so Total Spent and Remaining update after adding expenses
+    const interval = setInterval(fetchBudgetsData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchBudgetsData = async () => {
@@ -96,7 +99,9 @@ export default function Budget() {
 
   const totalBudget = categories.reduce((sum, category) => sum + category.budget, 0);
   const totalSpent = categories.reduce((sum, category) => sum + category.spent, 0);
+  // Show real negative value — do NOT clamp to 0
   const remaining = totalBudget - totalSpent;
+  const isOverBudget = remaining < 0;
   const overallUtilization = totalBudget === 0 ? 0 : (totalSpent / totalBudget) * 100;
 
   const startEditing = (category: BudgetCategory) => {
@@ -328,17 +333,29 @@ export default function Budget() {
               <div className="overview-header">
                 <div className="overview-icon">
                   <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="14" fill="#F0FDF4" />
-                    <path d="M12 16L15 19L21 13" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="16" cy="16" r="14" fill={isOverBudget ? '#FEF2F2' : '#F0FDF4'} />
+                    {isOverBudget ? (
+                      <path d="M11 11L21 21M21 11L11 21" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
+                    ) : (
+                      <path d="M12 16L15 19L21 13" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    )}
                   </svg>
                 </div>
                 <h3 className="overview-title">Remaining</h3>
               </div>
-              <p className="overview-amount success">
-                ₹{formatCurrency(remaining)}
+              <p className="overview-amount" style={{ color: isOverBudget ? '#ef4444' : '#10b981' }}>
+                {isOverBudget ? '-' : ''}₹{formatCurrency(Math.abs(remaining))}
               </p>
               <div className="overview-footer">
-                <span className="overview-label">22 days left</span>
+                {isOverBudget ? (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', background: '#fee2e2', padding: '2px 8px', borderRadius: '9999px' }}>
+                    ⚠️ Over Budget by ₹{formatCurrency(Math.abs(remaining))}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '9999px' }}>
+                    ✓ Within Budget
+                  </span>
+                )}
               </div>
             </div>
           </div>

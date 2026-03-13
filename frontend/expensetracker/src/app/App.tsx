@@ -17,6 +17,7 @@ import AdminAlerts from "./pages/AdminAlerts";
 import AdminCategories from "./pages/AdminCategories";
 import AdminLogs from "./pages/AdminLogs";
 import AdminTransactions from "./pages/AdminTransactions";
+import Profile from "./pages/Profile";
 
 export function App() {
   return (
@@ -37,6 +38,7 @@ export function App() {
         </Route>
         <Route path="/budget" element={<Budget />} />
         <Route path="/add-expense" element={<AddExpense />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />}>
           <Route index element={<AdminOverview />} />
           <Route path="users" element={<AdminUsers />} />

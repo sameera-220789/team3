@@ -46,12 +46,15 @@
 const express = require("express");
 const router = express.Router();
 
-const { signup, login } = require("../controllers/authController");
+const { signup, login, getProfile } = require("../controllers/authController");
 
 // SIGNUP (Controller use chestham)
 router.post("/signup", signup);
 
 // LOGIN
 router.post("/login", login);
+
+// GET PROFILE
+router.get("/profile", getProfile);
 
 module.exports = router;
