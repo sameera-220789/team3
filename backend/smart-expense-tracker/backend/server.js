@@ -82,6 +82,7 @@ const expenseRoutes = require("../routes/expenseRoutes");
 const budgetRoutes = require("../routes/budgetRoutes");
 const reportRoutes = require("../routes/reportRoutes");
 const alertRoutes = require("../routes/alertRoutes");
+const groupRoutes = require("../routes/groupRoutes");
 // const adminRoutes = require("../routes/adminRoutes");
 
 app.use("/api/auth", authRoutes);
@@ -89,6 +90,7 @@ app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/alerts", alertRoutes);
+app.use("/api/groups", groupRoutes);
 
 
 // Test route
