@@ -43,6 +43,7 @@ const formatCurrency = (amount: number) =>
 export default function Budget() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<BudgetCategory[]>([]);
+  const [budgetsData, setBudgetsData] = useState<any[]>([]); // Added state
   const [editingCategoryId, setEditingCategoryId] = useState<BudgetCategoryId | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -68,6 +69,8 @@ export default function Budget() {
       if (expenseRes.ok && budgetRes.ok) {
         const expenses = await expenseRes.json();
         const budgets = await budgetRes.json();
+        
+        setBudgetsData(budgets); // Set raw budget data to calculate overall total budget
 
         // Calculate spending per category
         const spentByCategory: Record<string, number> = {};
@@ -76,17 +79,19 @@ export default function Budget() {
         });
 
         // Merge with defined budgets
-        const loadedCategories = budgets.map((b: any) => {
-          const meta = getCategoryMetadata(b.category);
-          return {
-            id: b.category,
-            emoji: meta.emoji,
-            name: meta.name,
-            description: meta.description,
-            spent: spentByCategory[b.category] || 0,
-            budget: b.limit
-          };
-        });
+        const loadedCategories = budgets
+          .filter((b: any) => b.category !== 'total')
+          .map((b: any) => {
+            const meta = getCategoryMetadata(b.category);
+            return {
+              id: b.category,
+              emoji: meta.emoji,
+              name: meta.name,
+              description: meta.description,
+              spent: spentByCategory[b.category] || 0,
+              budget: b.limit
+            };
+          });
 
         setCategories(loadedCategories);
       }
@@ -97,12 +102,14 @@ export default function Budget() {
     }
   };
 
-  const totalBudget = categories.reduce((sum, category) => sum + category.budget, 0);
+  const totalBudgetDoc = budgetsData.find((b: any) => b.category === 'total');
+  const overallTotalBudget = totalBudgetDoc ? totalBudgetDoc.limit : 0;
+
   const totalSpent = categories.reduce((sum, category) => sum + category.spent, 0);
   // Show real negative value — do NOT clamp to 0
-  const remaining = totalBudget - totalSpent;
+  const remaining = overallTotalBudget - totalSpent;
   const isOverBudget = remaining < 0;
-  const overallUtilization = totalBudget === 0 ? 0 : (totalSpent / totalBudget) * 100;
+  const overallUtilization = overallTotalBudget === 0 ? 0 : (totalSpent / overallTotalBudget) * 100;
 
   const startEditing = (category: BudgetCategory) => {
     setEditingCategoryId(category.id);
@@ -133,6 +140,12 @@ export default function Budget() {
             category.id === categoryId ? { ...category, budget: numericValue } : category
           )
         );
+      } else if (response.status === 400) {
+        const data = await response.json();
+        alert(data.message || "Cannot add category budget. Total budget limit exceeded.");
+        setEditingCategoryId(null);
+        setEditingValue("");
+        return;
       } else {
         alert("Failed to save budget");
       }
@@ -218,20 +231,20 @@ export default function Budget() {
             </svg>
             <span>Budgets</span>
           </Link>
-          <a href="#" className="sidebar-link">
+          <Link to="/dashboard/transactions" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
               <path d="M3 8H17" stroke="currentColor" strokeWidth="1.5" />
             </svg>
             <span>Transactions</span>
-          </a>
-          <a href="#" className="sidebar-link">
+          </Link>
+          <Link to="/dashboard/reports" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M3 4H17V16H3V4Z" stroke="currentColor" strokeWidth="1.5" />
               <path d="M8 8L12 12M12 8L8 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <span>Reports</span>
-          </a>
+          </Link>
         </nav>
         <div className="sidebar-footer">
           <Link to="/profile" className="sidebar-link">
@@ -294,9 +307,9 @@ export default function Budget() {
                     <path d="M16 10V22M20 14H14C13.4696 14 12.9609 14.2107 12.5858 14.5858C12.2107 14.9609 12 15.4696 12 16C12 16.5304 12.2107 17.0391 12.5858 17.4142C12.9609 17.7893 13.4696 18 14 18H18C18.5304 18 19.0391 18.2107 19.4142 18.5858C19.7893 18.9609 20 19.4696 20 20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H12" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <h3 className="overview-title">Total Budget</h3>
+                <h3 className="overview-title">Overall Budget</h3>
               </div>
-              <p className="overview-amount">₹{formatCurrency(totalBudget)}</p>
+              <p className="overview-amount">₹{formatCurrency(overallTotalBudget)}</p>
               <div className="overview-footer">
                 <span className="overview-label">For March 2026</span>
               </div>
@@ -358,6 +371,37 @@ export default function Budget() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Category Wise Total Budget Card */}
+          <div className="card" style={{ marginBottom: 'var(--space-8)' }}>
+            <div className="card-header-section">
+              <h3 className="card-title">Category Wise Total Budget</h3>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              {categories.map(c => (
+                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>{c.emoji}</span>
+                    <span style={{ fontWeight: 500, color: '#374151' }}>{c.name}</span>
+                  </div>
+                  <span style={{ fontWeight: 600, color: '#111827' }}>₹{formatCurrency(c.budget)}</span>
+                </div>
+              ))}
+              {categories.length === 0 && (
+                <div style={{ color: '#6b7280', padding: '1rem', fontStyle: 'italic' }}>No categories added yet.</div>
+              )}
+            </div>
+
+            {categories.length > 0 && (
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '1.125rem', fontWeight: 600, color: '#374151' }}>Total Category Budget</span>
+                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
+                  ₹{formatCurrency(categories.reduce((acc, c) => acc + c.budget, 0))}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Budget Categories — side by side grid */}
@@ -541,6 +585,9 @@ export default function Budget() {
                     if (response.ok) {
                       amountInput.value = "";
                       fetchBudgetsData(); // Refresh all budget data
+                    } else if (response.status === 400) {
+                      const data = await response.json();
+                      alert(data.message || "Cannot add category budget. Total budget limit exceeded.");
                     } else {
                       alert("Failed to add budget category");
                     }

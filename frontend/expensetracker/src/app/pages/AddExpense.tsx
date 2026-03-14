@@ -122,20 +122,20 @@ export default function AddExpense() {
             </svg>
             <span>Budgets</span>
           </Link>
-          <a href="#" className="sidebar-link">
+          <Link to="/dashboard/transactions" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
               <path d="M3 8H17" stroke="currentColor" strokeWidth="1.5" />
             </svg>
             <span>Transactions</span>
-          </a>
-          <a href="#" className="sidebar-link">
+          </Link>
+          <Link to="/dashboard/reports" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M3 4H17V16H3V4Z" stroke="currentColor" strokeWidth="1.5" />
               <path d="M8 8L12 12M12 8L8 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <span>Reports</span>
-          </a>
+          </Link>
         </nav>
         <div className="sidebar-footer">
           <Link to="/profile" className="sidebar-link">

@@ -163,46 +163,81 @@ export function DashboardOverview() {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingTotalBudget, setEditingTotalBudget] = useState(false);
+  const [newTotalBudgetValue, setNewTotalBudgetValue] = useState("");
 
+  const fetchDashboardData = async () => {
+    try {
+      const user = getUser();
+      if(!user) return;
+      const fetchOpts = { cache: "no-store" as RequestCache };
+      const [expenseRes, budgetRes, alertRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
+        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts),
+        fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
+      ]);
+      
+      if (expenseRes.ok && budgetRes.ok && alertRes.ok) {
+        const expenseData = await expenseRes.json();
+        const budgetData = await budgetRes.json();
+        const alertData = await alertRes.json();
+        setExpenses(expenseData);
+        setBudgets(budgetData);
+        setAlerts(alertData);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const user = getUser();
-        if(!user) return;
-        const fetchOpts = { cache: "no-store" as RequestCache };
-        const [expenseRes, budgetRes, alertRes] = await Promise.all([
-          fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
-          fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts),
-          fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
-        ]);
-        
-        if (expenseRes.ok && budgetRes.ok && alertRes.ok) {
-          const expenseData = await expenseRes.json();
-          const budgetData = await budgetRes.json();
-          const alertData = await alertRes.json();
-          setExpenses(expenseData);
-          setBudgets(budgetData);
-          setAlerts(alertData);
-        }
-
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    fetchDashboardData();
     // Poll every 30 seconds for dynamic updates after adding expenses
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  const handleSaveTotalBudget = async () => {
+    const numericValue = Number(newTotalBudgetValue.replace(/,/g, ""));
+    if (!Number.isFinite(numericValue) || numericValue < 0) {
+      setEditingTotalBudget(false);
+      return;
+    }
+
+    try {
+      const user = getUser();
+      if (!user) return;
+      
+      const response = await fetch("http://localhost:5000/api/budgets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, category: 'total', limit: numericValue })
+      });
+      
+      if (response.ok) {
+        setEditingTotalBudget(false);
+        fetchDashboardData(); // Refresh to get the new total budget
+      } else {
+        alert("Failed to save total budget");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error updating total budget");
+    }
+  };
+
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
+  
+  const totalBudgetDoc = budgets.find(b => b.category === 'total');
+  const totalBudgetLimit = totalBudgetDoc ? totalBudgetDoc.limit : 0;
+  
+  const totalCategoryBudget = budgets.filter(b => b.category !== 'total').reduce((sum, b) => sum + b.limit, 0);
+  
   // Do NOT clamp to 0 — show real value so over-budget is visible
-  const remainingBudget = totalBudget - totalExpenses;
-  const utilizationPercent = totalBudget === 0 ? 0 : Math.min(100, (totalExpenses/totalBudget)*100);
+  const remainingBudget = totalBudgetLimit - totalCategoryBudget;
+  const utilizationPercent = totalBudgetLimit === 0 ? 0 : Math.min(100, (totalCategoryBudget/totalBudgetLimit)*100);
   const isOverBudget = remainingBudget < 0;
 
   const getEmoji = (category: string) => {
@@ -362,39 +397,81 @@ export function DashboardOverview() {
       )}
       {/* Stats Grid */}
       <div className="stats-grid">
-            <div className="stat-card">
+            {/* Total Budget Card (New) */}
+            <div className="stat-card full-width" style={totalBudgetLimit === 0 ? { border: '2px dashed #6366f1', background: '#eef2ff' } : {}}>
               <div className="stat-header">
-                <div className={`stat-icon-wrapper ${isOverBudget ? 'red' : 'blue'}`}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <div className="stat-icon-wrapper" style={{background: totalBudgetLimit === 0 ? '#6366f1' : '#EEF2FF', color: totalBudgetLimit === 0 ? 'white' : '#6366F1'}}>
+                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+                    <path d="M16 10V22M20 14H14C13.4696 14 12.9609 14.2107 12.5858 14.5858C12.2107 14.9609 12 15.4696 12 16C12 16.5304 12.2107 17.0391 12.5858 17.4142C12.9609 17.7893 13.4696 18 14 18H18C18.5304 18 19.0391 18.2107 19.4142 18.5858C19.7893 18.9609 20 19.4696 20 20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span className="stat-label">Total Balance (Remaining)</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+                  <span className="stat-label" style={totalBudgetLimit === 0 ? { color: '#4f46e5', fontWeight: 600, fontSize: '1rem' } : { fontSize: '1.1rem', fontWeight: 600 }}>Overall Total Budget</span>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {totalBudgetLimit > 0 && (
+                      <button 
+                        onClick={() => {
+                          setEditingTotalBudget(true);
+                          setNewTotalBudgetValue(totalBudgetLimit.toString());
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', padding: '4px' }}
+                        title="Edit Total Budget"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                          <path d="M14 3L17 6L7 16H4V13L14 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="stat-value" style={{ color: isOverBudget ? '#ef4444' : undefined }}>
-                {isOverBudget ? '-' : ''}₹{Math.abs(remainingBudget).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-              </p>
 
-              <div className="stat-footer">
-                {isOverBudget ? (
-                  <span className="stat-change negative" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 4V12M4 8L8 12L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    Over Budget
-                  </span>
-                ) : (
-                  <span className="stat-change positive">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 12V4M4 8L8 4L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    Calculated Output
-                  </span>
-                )}
-                <span className="stat-period">from budgets</span>
-              </div>
+              {editingTotalBudget ? (
+                <div style={{ display: 'flex', gap: '8px', margin: '14px 0' }}>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newTotalBudgetValue}
+                    onChange={(e) => setNewTotalBudgetValue(e.target.value)}
+                    onBlur={handleSaveTotalBudget}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveTotalBudget();
+                      if (e.key === 'Escape') setEditingTotalBudget(false);
+                    }}
+                    autoFocus
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '1.5rem', fontWeight: 700 }}
+                    placeholder="Enter limit"
+                  />
+                  <button onClick={handleSaveTotalBudget} style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '4px', padding: '0 16px', cursor: 'pointer', fontWeight: 600 }}>
+                    Save
+                  </button>
+                </div>
+              ) : totalBudgetLimit === 0 ? (
+                <div style={{ padding: '0.75rem 0', textAlign: 'center' }}>
+                  <p style={{ color: '#4f46e5', fontSize: '1rem', marginBottom: '1rem' }}>You haven't set a budget yet!</p>
+                  <button 
+                    onClick={() => {
+                      setEditingTotalBudget(true);
+                      setNewTotalBudgetValue("");
+                    }}
+                    style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '0.375rem', padding: '0.75rem 1.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}
+                  >
+                    Set Monthly Budget
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
+                  <p className="stat-value" style={{ fontSize: '2rem', marginBottom: 0 }}>
+                    ₹{totalBudgetLimit.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                  </p>
+                  <div className="stat-footer" style={{ flex: '0 1 200px' }}>
+                    <div className="mini-progress" style={{ flex: 1, marginRight: '8px' }}>
+                      <div className="mini-progress-bar" style={{ width: `${utilizationPercent}%`, background: isOverBudget ? '#ef4444' : '#6366f1' }}></div>
+                    </div>
+                    <span className="stat-period" style={{ color: isOverBudget ? '#ef4444' : undefined }}>{utilizationPercent.toFixed(0)}% allocated</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="stat-card">
@@ -405,18 +482,50 @@ export function DashboardOverview() {
                     <path d="M3 20H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span className="stat-label">Total Expenses</span>
+                <span className="stat-label">Total Spent</span>
               </div>
               <p className="stat-value">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
 
               <div className="stat-footer">
                 <span className="stat-change negative">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 4V12M4 8L8 12L12 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  All time
+                  Actual spending
                 </span>
-                <span className="stat-period"></span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <div className={`stat-icon-wrapper ${isOverBudget ? 'red' : 'blue'}`}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <span className="stat-label">Remaining Budget</span>
+              </div>
+              <p className="stat-value" style={{ color: isOverBudget ? '#ef4444' : undefined }}>
+                ₹{remainingBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+              </p>
+
+              <div className="stat-footer">
+                <span className="stat-period">Unallocated funds</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <div className="stat-icon-wrapper purple">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                    <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <span className="stat-label">Budget Usage</span>
+              </div>
+              <p className="stat-value">{((totalExpenses / (totalBudgetLimit || 1)) * 100).toFixed(1)}%</p>
+              <div className="stat-footer">
+                <div className="mini-progress" style={{ flex: 1, height: '4px', background: '#f3f4f6', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div className="mini-progress-bar" style={{ width: `${Math.min(100, (totalExpenses / (totalBudgetLimit || 1)) * 100)}%`, background: '#818cf8', height: '100%' }}></div>
+                </div>
               </div>
             </div>
 
@@ -429,33 +538,13 @@ export function DashboardOverview() {
                     <rect x="5" y="9" width="14" height="12" rx="1" stroke="currentColor" strokeWidth="2" />
                   </svg>
                 </div>
-                <span className="stat-label">Total Allocated Budgets</span>
+                <span className="stat-label">Category Allocated</span>
               </div>
-              <p className="stat-value">₹{totalBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+
+              <p className="stat-value">₹{totalCategoryBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
 
               <div className="stat-footer">
-                <div className="mini-progress" style={{ flex: 1, marginRight: '8px' }}>
-                  <div className="mini-progress-bar" style={{ width: `${utilizationPercent}%` }}></div>
-                </div>
-                <span className="stat-period">Budget Used: {utilizationPercent.toFixed(0)}%</span>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon-wrapper purple">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                    <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <span className="stat-label">Transactions</span>
-              </div>
-              <p className="stat-value">{expenses.length}</p>
-              <div className="stat-footer">
-                <span className="stat-change neutral">
-                  Total
-                </span>
+                <span className="stat-period">Total of category limits</span>
               </div>
             </div>
       </div>
