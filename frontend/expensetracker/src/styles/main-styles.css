@@ -87,12 +87,188 @@
 }
 
 /* ==========================================================================
+   Dark Mode Overrides
+   ========================================================================== */
+.dark {
+  /* Dark Mode Neutrals */
+  --color-gray-50: #121212;
+  --color-gray-100: #1e1e1e;
+  --color-gray-200: #2a2a2a;
+  --color-gray-300: #3f3f3f;
+  --color-gray-400: #525252;
+  --color-gray-500: #a3a3a3;
+  --color-gray-600: #d1d5db;
+  --color-gray-700: #e5e7eb;
+  --color-gray-800: #f3f4f6;
+  --color-gray-900: #f9fafb;
+}
+
+.dark body {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-800);
+}
+
+/* Override hardcoded backgrounds */
+.dark .navbar,
+.dark .page-header,
+.dark .budget-page-header,
+.dark .sidebar,
+.dark .card,
+.dark .stat-card,
+.dark .feature-card,
+.dark .pricing-card,
+.dark .auth-form-section,
+.dark .visual-stats-card,
+.dark .testimonial-card,
+.dark .form-input,
+.dark .preview-card,
+.dark .category-card,
+.dark .quick-actions-card,
+.dark .overview-card,
+.dark .user-panel,
+.dark .form-select {
+  background-color: #1e1e1e !important;
+  color: var(--color-gray-800);
+  border-color: var(--color-gray-300);
+}
+
+.dark .navbar {
+  background-color: rgba(30, 30, 30, 0.8) !important;
+}
+
+.dark .hero-bg,
+.dark .auth-page {
+  background: linear-gradient(180deg, #121212 0%, #1e1e1e 100%) !important;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6, 
+.dark .card-title, .dark .page-title, .dark .budget-page-title, .dark .stat-value, .dark .auth-title, .dark .user-name {
+  color: var(--color-gray-900) !important;
+}
+
+.dark .nav-link, .dark .page-subtitle, .dark .budget-page-subtitle, .dark .card-subtitle, .dark .stat-label, .dark .auth-subtitle, .dark .user-role, .dark .overview-title, .dark .overview-label {
+  color: var(--color-gray-500) !important;
+}
+
+
+/* Button & Panel Fixes for Dark Mode */
+.dark .btn-secondary,
+.dark .btn-social,
+.dark .btn-white,
+.dark .btn-outline {
+  background-color: var(--color-gray-100) !important;
+  color: var(--color-gray-900) !important;
+  border-color: var(--color-gray-300) !important;
+}
+
+.dark .btn-secondary:hover,
+.dark .btn-social:hover,
+.dark .btn-white:hover,
+.dark .btn-outline:hover {
+  background-color: var(--color-gray-200) !important;
+}
+
+.dark .divider span {
+  background-color: var(--color-gray-50) !important;
+  color: var(--color-gray-400);
+}
+
+.dark .budget-card {
+  background-color: #1e1e1e !important;
+}
+
+.dark .budget-card.warning-card {
+  background-color: rgba(245, 158, 11, 0.05) !important;
+}
+
+.dark .budget-card.danger-card {
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+.dark .add-budget-btn {
+  background-color: var(--color-gray-50) !important;
+  border-color: var(--color-gray-300) !important;
+  color: var(--color-gray-700) !important;
+}
+
+.dark .add-budget-btn:hover {
+  background-color: var(--color-gray-100) !important;
+}
+
+.dark .budget-input {
+  background-color: var(--color-gray-100) !important;
+  color: var(--color-gray-900) !important;
+  border-color: var(--color-gray-300) !important;
+}
+
+
+.dark .theme-toggle-btn {
+  color: #fbbf24 !important; /* Amber for better visibility */
+}
+
+
+
+
+
+.dark .sidebar-link:hover {
+  background: var(--color-gray-100);
+}
+
+.dark .transactions-table th {
+  color: var(--color-gray-400);
+  border-bottom-color: var(--color-gray-300);
+}
+
+.dark .transactions-table td {
+  border-bottom-color: var(--color-gray-100);
+  color: var(--color-gray-700);
+}
+
+.dark .quick-actions-card {
+  background-color: var(--color-gray-100) !important;
+}
+
+.dark .quick-action-btn {
+  background-color: var(--color-gray-50) !important;
+  border-color: var(--color-gray-300) !important;
+  color: var(--color-gray-800) !important;
+}
+
+.dark .quick-action-btn:hover {
+  background-color: var(--color-gray-200) !important;
+}
+
+
+.dark .amount,
+.dark .overview-amount {
+  color: var(--color-gray-900);
+}
+
+.dark .divider::before {
+  background: var(--color-gray-300);
+}
+
+.dark .divider span {
+  background: #1e1e1e;
+}
+
+.dark .tabs-container {
+  background: var(--color-gray-100) !important;
+}
+
+.dark .tab-btn:not(.active) {
+  color: var(--color-gray-500);
+}
+
+
+/* ==========================================================================
    2. Reset & Base Styles
    ========================================================================== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, box-shadow 0.3s ease;
 }
 
 html {

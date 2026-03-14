@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export default function Home() {
   return (
@@ -48,6 +49,9 @@ export default function Home() {
               <Link to="/signup" className="btn btn-primary">
                 Get Started
               </Link>
+            </li>
+            <li style={{ display: 'flex', alignItems: 'center' }}>
+              <ThemeToggle />
             </li>
           </ul>
           <button className="mobile-menu-btn">

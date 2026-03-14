@@ -6,6 +6,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -165,7 +166,8 @@ export default function Admin() {
               <p className="page-subtitle">{getPageSubtitle()}</p>
             </div>
           </div>
-          <div className="header-actions">
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ThemeToggle />
             <button className="btn btn-secondary">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M10 4V10M10 10V16M10 10H16M10 10H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

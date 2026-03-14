@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getUser } from "../utils/api";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 interface ProfileData {
   id: string;
@@ -129,7 +130,8 @@ export default function Profile() {
             <h1 className="budget-page-title">My Profile</h1>
             <p className="budget-page-subtitle">Your account information and details</p>
           </div>
-          <div className="budget-header-right">
+          <div className="budget-header-right" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <ThemeToggle />
             <div className="user-panel">
               <div className="user-avatar">
                 {localUser?.firstName?.[0] || "U"}{localUser?.lastName?.[0] || ""}
@@ -146,7 +148,7 @@ export default function Profile() {
           {loading && (
             <div className="card" style={{ padding: "3rem", textAlign: "center" }}>
               <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>⏳</div>
-              <p style={{ color: "#6b7280", fontWeight: 500 }}>Loading your profile...</p>
+              <p style={{ color: "var(--color-gray-500)", fontWeight: 500 }}>Loading your profile...</p>
             </div>
           )}
 
@@ -257,16 +259,16 @@ function ProfileRow({
       display: "flex",
       alignItems: "center",
       padding: "0.875rem 0",
-      borderBottom: isLast ? "none" : "1px solid #f3f4f6",
+      borderBottom: isLast ? "none" : "1px solid var(--color-gray-100)",
       gap: "0.75rem"
     }}>
       <span style={{ fontSize: "1.1rem", width: "24px", textAlign: "center", flexShrink: 0 }}>{icon}</span>
-      <span style={{ fontSize: "0.875rem", color: "#6b7280", fontWeight: 500, flex: 1 }}>{label}</span>
+      <span style={{ fontSize: "0.875rem", color: "var(--color-gray-500)", fontWeight: 500, flex: 1 }}>{label}</span>
       <span style={{
         fontSize: "0.875rem",
-        color: "#111827",
+        color: "var(--color-gray-900)",
         fontWeight: 600,
-        background: "#f9fafb",
+        background: "var(--color-gray-100)",
         padding: "4px 12px",
         borderRadius: "0.375rem",
         maxWidth: "280px",

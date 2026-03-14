@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getUser } from "../utils/api";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export default function Dashboard() {
   const location = useLocation();
@@ -128,6 +129,7 @@ export default function Dashboard() {
             <p className="budget-page-subtitle">{getPageSubtitle()}</p>
           </div>
           <div className="budget-header-right">
+            <ThemeToggle />
             <button className="btn btn-secondary">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M3 3L17 3V13L10 17L3 13V3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -398,7 +400,7 @@ export function DashboardOverview() {
       {/* Stats Grid */}
       <div className="stats-grid">
             {/* Total Budget Card (New) */}
-            <div className="stat-card full-width" style={totalBudgetLimit === 0 ? { border: '2px dashed #6366f1', background: '#eef2ff' } : {}}>
+            <div className="stat-card full-width" style={totalBudgetLimit === 0 ? { border: '2px dashed var(--color-primary)', background: 'var(--color-primary-light)', opacity: 0.8 } : {}}>
               <div className="stat-header">
                 <div className="stat-icon-wrapper" style={{background: totalBudgetLimit === 0 ? '#6366f1' : '#EEF2FF', color: totalBudgetLimit === 0 ? 'white' : '#6366F1'}}>
                   <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
@@ -439,7 +441,7 @@ export function DashboardOverview() {
                       if (e.key === 'Escape') setEditingTotalBudget(false);
                     }}
                     autoFocus
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '4px', border: '1px solid #e5e7eb', fontSize: '1.5rem', fontWeight: 700 }}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--color-gray-200)', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)', fontSize: '1.5rem', fontWeight: 700 }}
                     placeholder="Enter limit"
                   />
                   <button onClick={handleSaveTotalBudget} style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '4px', padding: '0 16px', cursor: 'pointer', fontWeight: 600 }}>
@@ -523,7 +525,7 @@ export function DashboardOverview() {
               </div>
               <p className="stat-value">{((totalExpenses / (totalBudgetLimit || 1)) * 100).toFixed(1)}%</p>
               <div className="stat-footer">
-                <div className="mini-progress" style={{ flex: 1, height: '4px', background: '#f3f4f6', borderRadius: '2px', overflow: 'hidden' }}>
+                <div className="mini-progress" style={{ flex: 1, height: '4px', background: 'var(--color-gray-200)', borderRadius: '2px', overflow: 'hidden' }}>
                   <div className="mini-progress-bar" style={{ width: `${Math.min(100, (totalExpenses / (totalBudgetLimit || 1)) * 100)}%`, background: '#818cf8', height: '100%' }}></div>
                 </div>
               </div>
@@ -567,10 +569,10 @@ export function DashboardOverview() {
               <div className="chart-container">
                 <svg className="line-chart" viewBox="0 0 600 250">
                   {/* Grid lines */}
-                  <line x1="0" y1="50" x2="600" y2="50" stroke="#f3f4f6" strokeWidth="1" />
-                  <line x1="0" y1="100" x2="600" y2="100" stroke="#f3f4f6" strokeWidth="1" />
-                  <line x1="0" y1="150" x2="600" y2="150" stroke="#f3f4f6" strokeWidth="1" />
-                  <line x1="0" y1="200" x2="600" y2="200" stroke="#f3f4f6" strokeWidth="1" />
+                  <line x1="0" y1="50" x2="600" y2="50" stroke="var(--color-gray-200)" strokeWidth="1" />
+                  <line x1="0" y1="100" x2="600" y2="100" stroke="var(--color-gray-200)" strokeWidth="1" />
+                  <line x1="0" y1="150" x2="600" y2="150" stroke="var(--color-gray-200)" strokeWidth="1" />
+                  <line x1="0" y1="200" x2="600" y2="200" stroke="var(--color-gray-200)" strokeWidth="1" />
 
                   {/* Area fill */}
                   <path d={areaPath}
@@ -621,13 +623,13 @@ export function DashboardOverview() {
                 {/* Donut chart centred */}
                 <div className="donut-chart" style={{ width: '180px', height: '180px', flexShrink: 0 }}>
                   <svg viewBox="0 0 200 200" style={{ overflow: 'visible', width: '100%', height: '100%' }}>
-                    <circle cx="100" cy="100" r="80" fill="none" stroke="#EEF2FF" strokeWidth="40" />
+                    <circle cx="100" cy="100" r="80" fill="none" stroke="var(--color-gray-100)" strokeWidth="40" />
                     {totalExpenses > 0 && segmentProps.map(({ cat, color, props }) => (
                       <circle key={cat} cx="100" cy="100" r="80" fill="none" stroke={color} strokeWidth="40"
                         {...props} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease', cursor: 'pointer' }} />
                     ))}
-                    <text x="100" y="95" textAnchor="middle" fontSize="22" fontWeight="700" fill="#1f2937">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</text>
-                    <text x="100" y="115" textAnchor="middle" fontSize="12" fill="#9ca3af">Total Spent</text>
+                    <text x="100" y="95" textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--color-gray-900)">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</text>
+                    <text x="100" y="115" textAnchor="middle" fontSize="12" fill="var(--color-gray-400)">Total Spent</text>
 
                   </svg>
                 </div>
@@ -639,19 +641,20 @@ export function DashboardOverview() {
                     gap: '0.5rem 1.5rem',
                     width: '100%',
                     padding: '0.75rem 1rem',
-                    background: '#f9fafb',
-                    borderRadius: '0.5rem'
+                    background: 'var(--color-gray-50)',
+                    borderRadius: '0.5rem',
+                    border: '1px solid var(--color-gray-100)'
                   }}>
                     {activeCategories.map(([cat, amt], idx) => (
                       <div className="legend-item" key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
                         <span className="legend-dot" style={{ background: getCategoryColor(cat, idx), flexShrink: 0 }}></span>
-                        <span className="legend-label" style={{ textTransform: 'capitalize', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat}</span>
-                        <span className="legend-value" style={{ flexShrink: 0 }}>₹{amt.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-
+                        <span className="legend-label" style={{ textTransform: 'capitalize', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-gray-700)' }}>{cat}</span>
+                        <span className="legend-value" style={{ flexShrink: 0, color: 'var(--color-gray-900)', fontWeight: 600 }}>₹{amt.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                       </div>
                     ))}
                   </div>
                 )}
+
               </div>
             </div>
           </div>

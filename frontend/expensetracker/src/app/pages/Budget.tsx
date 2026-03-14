@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getUser } from "../utils/api";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 type BudgetCategoryId =
   | "food"
@@ -418,19 +419,20 @@ export default function Budget() {
             <h1 className="budget-page-title">Budget Management</h1>
             <p className="budget-page-subtitle">Set and track your monthly spending limits</p>
           </div>
-          <div className="budget-header-right">
-            <div className="tabs-container" style={{ display: 'flex', gap: '10px', marginRight: '20px', background: '#f3f4f6', padding: '4px', borderRadius: '8px' }}>
+          <div className="budget-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ThemeToggle />
+            <div className="tabs-container" style={{ display: 'flex', gap: '10px', marginRight: '20px', background: 'var(--color-gray-100)', padding: '4px', borderRadius: '8px' }}>
               <button 
                 className={`tab-btn ${activeTab === 'budgets' ? 'active' : ''}`}
                 onClick={() => setActiveTab('budgets')}
-                style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', fontWeight: 600, background: activeTab === 'budgets' ? 'white' : 'transparent', color: activeTab === 'budgets' ? '#4f46e5' : '#6b7280', boxShadow: activeTab === 'budgets' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', fontWeight: 600, background: activeTab === 'budgets' ? 'var(--color-gray-50)' : 'transparent', color: activeTab === 'budgets' ? 'var(--color-primary)' : 'var(--color-gray-500)', boxShadow: activeTab === 'budgets' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
               >
                 My Budgets
               </button>
               <button 
                 className={`tab-btn ${activeTab === 'split' ? 'active' : ''}`}
                 onClick={() => setActiveTab('split')}
-                style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', fontWeight: 600, background: activeTab === 'split' ? 'white' : 'transparent', color: activeTab === 'split' ? '#4f46e5' : '#6b7280', boxShadow: activeTab === 'split' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', fontWeight: 600, background: activeTab === 'split' ? 'var(--color-gray-50)' : 'transparent', color: activeTab === 'split' ? 'var(--color-primary)' : 'var(--color-gray-500)', boxShadow: activeTab === 'split' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
               >
                 Split Expenses
               </button>
@@ -456,8 +458,8 @@ export default function Budget() {
                   <div className="overview-header">
                     <div className="overview-icon">
                       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="14" fill="#EEF2FF" />
-                        <path d="M16 10V22M20 14H14C13.4696 14 12.9609 14.2107 12.5858 14.5858C12.2107 14.9609 12 15.4696 12 16C12 16.5304 12.2107 17.0391 12.5858 17.4142C12.9609 17.7893 13.4696 18 14 18H18C18.5304 18 19.0391 18.2107 19.4142 18.5858C19.7893 18.9609 20 19.4696 20 20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H12" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" />
+                        <circle cx="16" cy="16" r="14" fill="var(--color-primary-light)" fillOpacity="0.1" />
+                        <path d="M16 10V22M20 14H14C13.4696 14 12.9609 14.2107 12.5858 14.5858C12.2107 14.9609 12 15.4696 12 16C12 16.5304 12.2107 17.0391 12.5858 17.4142C12.9609 17.7893 13.4696 18 14 18H18C18.5304 18 19.0391 18.2107 19.4142 18.5858C19.7893 18.9609 20 19.4696 20 20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H12" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                     </div>
                     <h3 className="overview-title">Overall Budget</h3>
@@ -472,9 +474,9 @@ export default function Budget() {
                   <div className="overview-header">
                     <div className="overview-icon">
                       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="14" fill="#FEF2F2" />
-                        <path d="M16 10V16L20 18" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
-                        <circle cx="16" cy="16" r="8" stroke="#EF4444" strokeWidth="2" />
+                        <circle cx="16" cy="16" r="14" fill="var(--color-danger-light)" fillOpacity="0.1" />
+                        <path d="M16 10V16L20 18" stroke="var(--color-danger)" strokeWidth="2" strokeLinecap="round" />
+                        <circle cx="16" cy="16" r="8" stroke="var(--color-danger)" strokeWidth="2" />
                       </svg>
                     </div>
                     <h3 className="overview-title">Total Spent</h3>
@@ -499,26 +501,26 @@ export default function Budget() {
                   <div className="overview-header">
                     <div className="overview-icon">
                       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="14" fill={isOverBudget ? '#FEF2F2' : '#F0FDF4'} />
+                        <circle cx="16" cy="16" r="14" fill={isOverBudget ? 'var(--color-danger-light)' : 'var(--color-success-light)'} fillOpacity="0.2" />
                         {isOverBudget ? (
-                          <path d="M11 11L21 21M21 11L11 21" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
+                          <path d="M11 11L21 21M21 11L11 21" stroke="var(--color-danger)" strokeWidth="2.5" strokeLinecap="round" />
                         ) : (
-                          <path d="M12 16L15 19L21 13" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M12 16L15 19L21 13" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                         )}
                       </svg>
                     </div>
                     <h3 className="overview-title">Remaining</h3>
                   </div>
-                  <p className="overview-amount" style={{ color: isOverBudget ? '#ef4444' : '#10b981' }}>
+                  <p className="overview-amount" style={{ color: isOverBudget ? 'var(--color-danger)' : 'var(--color-success)' }}>
                     {isOverBudget ? '-' : ''}₹{formatCurrency(Math.abs(remaining))}
                   </p>
                   <div className="overview-footer">
                     {isOverBudget ? (
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', background: '#fee2e2', padding: '2px 8px', borderRadius: '9999px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-danger)', background: 'var(--color-danger-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px' }}>
                         ⚠️ Over Budget by ₹{formatCurrency(Math.abs(remaining))}
                       </span>
                     ) : (
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '9999px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px' }}>
                         ✓ Within Budget
                       </span>
                     )}
@@ -534,12 +536,12 @@ export default function Budget() {
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               {categories.map(c => (
-                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: '#f9fafb', borderRadius: '0.5rem', border: '1px solid #e5e7eb' }}>
+                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'var(--color-gray-100)', borderRadius: '0.5rem', border: '1px solid var(--color-gray-200)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span>{c.emoji}</span>
-                    <span style={{ fontWeight: 500, color: '#374151' }}>{c.name}</span>
+                    <span style={{ fontWeight: 500, color: 'var(--color-gray-700)' }}>{c.name}</span>
                   </div>
-                  <span style={{ fontWeight: 600, color: '#111827' }}>₹{formatCurrency(c.budget)}</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>₹{formatCurrency(c.budget)}</span>
                 </div>
               ))}
               {categories.length === 0 && (
@@ -548,9 +550,9 @@ export default function Budget() {
             </div>
 
             {categories.length > 0 && (
-              <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.125rem', fontWeight: 600, color: '#374151' }}>Total Category Budget</span>
-                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#6366f1' }}>
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-gray-200)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-gray-700)' }}>Total Category Budget</span>
+                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                   ₹{formatCurrency(categories.reduce((acc, c) => acc + c.budget, 0))}
                 </span>
               </div>
@@ -707,7 +709,7 @@ export default function Budget() {
                   <option value="education">Education</option>
                   <option value="other">Other</option>
                 </select>
-                <input type="number" id="new-budget-amount" className="budget-input" placeholder="Budget Amount" style={{ padding: '0.5rem', border: '1px solid #e5e7eb', borderRadius: '0.375rem' }} />
+                <input type="number" id="new-budget-amount" className="budget-input" placeholder="Budget Amount" style={{ padding: '0.5rem', border: '1px solid var(--color-gray-300)', borderRadius: '0.375rem' }} />
                 <button 
                   className="add-budget-btn"
                   onClick={async () => {
@@ -771,9 +773,9 @@ export default function Budget() {
                     style={{
                       padding: '8px 16px',
                       borderRadius: '20px',
-                      border: '1px solid #e5e7eb',
-                      background: activeGroupId === group._id ? '#e0e7ff' : 'white',
-                      color: activeGroupId === group._id ? '#4f46e5' : '#4b5563',
+                      border: '1px solid var(--color-gray-200)',
+                      background: activeGroupId === group._id ? 'var(--color-primary-light)' : 'var(--color-gray-100)',
+                      color: activeGroupId === group._id ? 'white' : 'var(--color-gray-600)',
                       fontWeight: activeGroupId === group._id ? 600 : 400,
                       cursor: 'pointer',
                       whiteSpace: 'nowrap'
@@ -787,9 +789,9 @@ export default function Budget() {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '20px',
-                    border: '1px dashed #6366f1',
+                    border: '1px dashed var(--color-primary)',
                     background: 'transparent',
-                    color: '#6366f1',
+                    color: 'var(--color-primary)',
                     fontWeight: 500,
                     cursor: 'pointer',
                     display: 'flex',
@@ -829,7 +831,7 @@ export default function Budget() {
                 
                 {/* Left side: Group Expenses Table */}
                 <div className="card" style={{ padding: '20px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px', color: '#111827' }}>Group Expenses</h3>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px', color: 'var(--color-gray-900)' }}>Group Expenses</h3>
                   <div className="table-wrapper">
                     <table className="transactions-table">
                       <thead>
@@ -844,13 +846,13 @@ export default function Budget() {
                       <tbody>
                         {groupExpenses.length > 0 ? groupExpenses.map((exp: any) => (
                           <tr key={exp._id}>
-                            <td style={{ color: '#6b7280' }}>
+                            <td style={{ color: 'var(--color-gray-500)' }}>
                               {new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </td>
-                            <td style={{ fontWeight: 500 }}>{exp.description}</td>
-                            <td style={{ fontWeight: 600, color: '#111827' }}>₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-                            <td style={{ color: '#4f46e5', fontWeight: 500 }}>{exp.paidBy}</td>
-                            <td style={{ color: '#4b5563', fontSize: '0.875rem' }}>
+                            <td style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>{exp.description}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                            <td style={{ color: 'var(--color-primary)', fontWeight: 500 }}>{exp.paidBy}</td>
+                            <td style={{ color: 'var(--color-gray-600)', fontSize: '0.875rem' }}>
                               {exp.splitBetween.map((s: any) => s.member).join(', ')}
                             </td>
                           </tr>
@@ -867,38 +869,38 @@ export default function Budget() {
                 </div>
 
                 {/* Right side: Balances Summary */}
-                <div className="card" style={{ padding: '20px', background: '#f8fafc' }}>
+                <div className="card" style={{ padding: '20px', background: 'var(--color-gray-100)' }}>
                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                     <div style={{ background: '#e0e7ff', p: '8px', borderRadius: '8px', color: '#4f46e5' }}>
+                     <div style={{ background: 'var(--color-primary-light)', padding: '8px', borderRadius: '8px', color: 'white', opacity: 0.8 }}>
                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.44 3.59 2.95 1.89.47 2.42 1.14 2.42 1.92 0 .9-.85 1.56-2.18 1.56-1.57 0-2.25-.8-2.3-1.88h-1.71c.06 1.75 1.13 2.89 2.8 3.25V19h2.39v-1.7c1.55-.37 2.8-1.35 2.8-2.92.01-1.92-1.51-2.61-3.68-3.24z" fill="currentColor"/>
                        </svg>
                      </div>
-                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b' }}>Balance Summary</h3>
+                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>Balance Summary</h3>
                    </div>
                    
                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                      {groupBalances.transactions.length > 0 ? groupBalances.transactions.map((tx: any, i: number) => (
-                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--color-gray-50)', borderRadius: '8px', border: '1px solid var(--color-gray-200)' }}>
                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                           <span style={{ fontSize: '0.875rem', color: '#64748b' }}>Owes</span>
-                           <span style={{ fontWeight: 600, color: '#ef4444' }}>{tx.from}</span>
+                           <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Owes</span>
+                           <span style={{ fontWeight: 600, color: 'var(--color-danger)' }}>{tx.from}</span>
                          </div>
-                         <div style={{ color: '#cbd5e1' }}>
+                         <div style={{ color: 'var(--color-gray-400)' }}>
                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                              <path d="M5 12h14m-4-4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                            </svg>
                          </div>
                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                           <span style={{ fontSize: '0.875rem', color: '#64748b' }}>Gets paid</span>
-                           <span style={{ fontWeight: 600, color: '#10b981' }}>{tx.to}</span>
+                           <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Gets paid</span>
+                           <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>{tx.to}</span>
                          </div>
-                         <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1e293b', marginLeft: '12px' }}>
+                         <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-gray-900)', marginLeft: '12px' }}>
                            ₹{tx.amount.toLocaleString('en-IN')}
                          </div>
                        </div>
                      )) : (
-                       <div style={{ textAlign: 'center', padding: '20px 0', color: '#64748b', fontSize: '0.9rem' }}>
+                       <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-gray-600)', fontSize: '0.9rem' }}>
                          Balances are settled up!
                        </div>
                      )}
@@ -907,13 +909,13 @@ export default function Budget() {
 
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-                <div style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', width: '64px', height: '64px', borderRadius: '50%', background: '#f1f5f9', color: '#94a3b8', marginBottom: '16px' }}>
+              <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-gray-100)', borderRadius: '12px', border: '1px dashed var(--color-gray-300)' }}>
+                <div style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-gray-200)', color: 'var(--color-gray-500)', marginBottom: '16px' }}>
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                     <path d="M17 20h5V4H2v16h5M7 15h10M7 11h10M7 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Select or create a Group</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: '8px' }}>Select or create a Group</h3>
                 <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 auto', lineHeight: 1.5 }}>
                   Manage shared expenses among friends, family, or colleagues easily. Create a group to start tracking splits automatically!
                 </p>
@@ -927,57 +929,57 @@ export default function Budget() {
       {/* CREATE GROUP MODAL */}
       {showCreateGroupModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px' }}>Create New Group</h2>
+          <div style={{ background: 'var(--color-gray-100)', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-gray-200)' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px', color: 'var(--color-gray-900)' }}>Create New Group</h2>
             
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#4b5563' }}>Group Name</label>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Group Name</label>
               <input 
                 type="text" 
                 value={newGroupName} 
                 onChange={(e) => setNewGroupName(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
                 placeholder="e.g., Goa Trip 2026"
               />
             </div>
 
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#4b5563' }}>Members (Names)</label>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Members (Names)</label>
               {newGroupMembers.map((member, index) => (
                 <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                   <input 
                     type="text" 
-                    value={member}
+                    value={member} 
                     onChange={(e) => {
-                      const newMembers = [...newGroupMembers];
-                      newMembers[index] = e.target.value;
-                      setNewGroupMembers(newMembers);
+                      const updated = [...newGroupMembers];
+                      updated[index] = e.target.value;
+                      setNewGroupMembers(updated);
                     }}
-                    style={{ flex: 1, padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-                    placeholder={`Member ${index + 1} Name`}
+                    style={{ flex: 1, padding: '10px 12px', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
+                    placeholder="Member name"
                   />
                   {newGroupMembers.length > 1 && (
                     <button 
                       onClick={() => setNewGroupMembers(newGroupMembers.filter((_, i) => i !== index))}
-                      style={{ padding: '0 12px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                    >✕</button>
+                      style={{ padding: '8px', background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                    >Remove</button>
                   )}
                 </div>
               ))}
               <button 
                 onClick={() => setNewGroupMembers([...newGroupMembers, ""])}
-                style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: 500, cursor: 'pointer', fontSize: '0.875rem', marginTop: '4px' }}
-              >+ Add another member</button>
+                style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
+              >+ Add Member</button>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button 
                 onClick={() => setShowCreateGroupModal(false)}
-                style={{ padding: '8px 16px', border: '1px solid #d1d5db', background: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
+                style={{ padding: '8px 16px', border: '1px solid var(--color-gray-300)', background: 'var(--color-gray-100)', color: 'var(--color-gray-700)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
               >Cancel</button>
               <button 
                 onClick={handleCreateGroup}
-                style={{ padding: '8px 16px', border: 'none', background: '#6366f1', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
+                style={{ padding: '8px 16px', border: 'none', background: 'var(--color-primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
               >Create Group</button>
             </div>
           </div>
@@ -996,20 +998,20 @@ export default function Budget() {
                 type="text" 
                 value={splitDesc} 
                 onChange={(e) => setSplitDesc(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--color-gray-200)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
                 placeholder="e.g., Dinner at Taj"
               />
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#4b5563' }}>Total Amount</label>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Total Amount</label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '10px', color: '#6b7280' }}>₹</span>
+                <span style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-gray-400)' }}>₹</span>
                 <input 
                   type="number" 
                   value={splitAmount} 
                   onChange={(e) => setSplitAmount(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px 10px 28px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px 12px 10px 28px', border: '1px solid var(--color-gray-200)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
                   placeholder="0.00"
                 />
               </div>
@@ -1020,7 +1022,7 @@ export default function Budget() {
               <select 
                 value={splitPaidBy} 
                 onChange={(e) => setSplitPaidBy(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white' }}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--color-gray-200)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
               >
                 <option value="" disabled>Select member who paid</option>
                 {groups.find(g => g._id === activeGroupId)?.members.map((m: string) => (
@@ -1030,7 +1032,7 @@ export default function Budget() {
             </div>
 
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#4b5563' }}>Split Between (Equal Shares)</label>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Split Between (Equal Shares)</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {groups.find(g => g._id === activeGroupId)?.members.map((m: string) => (
                   <label key={m} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
@@ -1052,7 +1054,7 @@ export default function Budget() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button 
                 onClick={() => setShowAddExpenseModal(false)}
-                style={{ padding: '8px 16px', border: '1px solid #d1d5db', background: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
+                style={{ padding: '8px 16px', border: '1px solid var(--color-gray-200)', background: 'var(--color-gray-50)', color: 'var(--color-gray-700)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
               >Cancel</button>
               <button 
                 onClick={handleAddSplitExpense}

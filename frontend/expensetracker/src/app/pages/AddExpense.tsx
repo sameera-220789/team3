@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getUser } from "../utils/api";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export default function AddExpense() {
   const navigate = useNavigate();
@@ -161,7 +162,8 @@ export default function AddExpense() {
             <h1 className="page-title">Add Expense</h1>
             <p className="page-subtitle">Record a new transaction quickly and easily</p>
           </div>
-          <div className="header-actions">
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ThemeToggle />
             <button className="btn btn-secondary" onClick={() => navigate('/dashboard/transactions')}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M3 3V17H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -418,7 +420,7 @@ export default function AddExpense() {
                               <span className="breakdown-icon">{getEmoji(cat)}</span>
                               <span className="breakdown-name" style={{textTransform: 'capitalize'}}>{cat}</span>
                             </div>
-                            <span className="breakdown-amount">₹{amt.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                            <span className="breakdown-amount">₹{(amt as number).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
 
                           </div>
                         ))}
@@ -461,7 +463,7 @@ export default function AddExpense() {
                       </div>
                     );
                   }) : (
-                    <div style={{textAlign: 'center', padding: '1rem', color: '#6B7280'}}>No recent transactions</div>
+                    <div style={{textAlign: 'center', padding: '1rem', color: 'var(--color-gray-500)'}}>No recent transactions</div>
                   )}
                 </div>
               </div>
