@@ -48,7 +48,8 @@ export default function Budget() {
 
   // Budget State
   const [categories, setCategories] = useState<BudgetCategory[]>([]);
-  const [budgetsData, setBudgetsData] = useState<any[]>([]); // Added state
+  const [budgetsData, setBudgetsData] = useState<any[]>([]); // raw budget docs
+  const [allExpenses, setAllExpenses] = useState<any[]>([]); // all raw expenses
   const [editingCategoryId, setEditingCategoryId] = useState<BudgetCategoryId | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -57,8 +58,8 @@ export default function Budget() {
   const [groups, setGroups] = useState<any[]>([]);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [groupExpenses, setGroupExpenses] = useState<any[]>([]);
-  const [groupBalances, setGroupBalances] = useState<{balances: any, transactions: any[]}>({ balances: {}, transactions: [] });
-  
+  const [groupBalances, setGroupBalances] = useState<{ balances: any, transactions: any[] }>({ balances: {}, transactions: [] });
+
   // Modals Data
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -75,11 +76,11 @@ export default function Budget() {
     fetchGroups();
     // Auto-refresh every 30 seconds so Total Spent and Remaining update after adding expenses
     const interval = setInterval(() => {
-        fetchBudgetsData();
-        if (activeTab === "split") {
-          fetchGroups();
-          if (activeGroupId) fetchGroupDetails(activeGroupId);
-        }
+      fetchBudgetsData();
+      if (activeTab === "split") {
+        fetchGroups();
+        if (activeGroupId) fetchGroupDetails(activeGroupId);
+      }
     }, 30000);
     return () => clearInterval(interval);
   }, [activeTab, activeGroupId]);
@@ -102,15 +103,15 @@ export default function Budget() {
 
   const fetchGroupDetails = async (groupId: string) => {
     try {
-       const [expRes, balRes] = await Promise.all([
-         fetch(`http://localhost:5000/api/groups/${groupId}/expenses`),
-         fetch(`http://localhost:5000/api/groups/${groupId}/balance`)
-       ]);
+      const [expRes, balRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/groups/${groupId}/expenses`),
+        fetch(`http://localhost:5000/api/groups/${groupId}/balance`)
+      ]);
 
-       if (expRes.ok && balRes.ok) {
-         setGroupExpenses(await expRes.json());
-         setGroupBalances(await balRes.json());
-       }
+      if (expRes.ok && balRes.ok) {
+        setGroupExpenses(await expRes.json());
+        setGroupBalances(await balRes.json());
+      }
     } catch (e) {
       console.error("Error fetching group details:", e);
     }
@@ -119,7 +120,7 @@ export default function Budget() {
   const handleGroupSelect = (id: string) => {
     setActiveGroupId(id);
     setGroupExpenses([]);
-    setGroupBalances({balances: {}, transactions: []});
+    setGroupBalances({ balances: {}, transactions: [] });
     fetchGroupDetails(id);
   };
 
@@ -137,8 +138,9 @@ export default function Budget() {
       if (expenseRes.ok && budgetRes.ok) {
         const expenses = await expenseRes.json();
         const budgets = await budgetRes.json();
-        
-        setBudgetsData(budgets); // Set raw budget data to calculate overall total budget
+
+        setBudgetsData(budgets); // raw budget docs
+        setAllExpenses(expenses); // all raw expenses for correct totalSpent
 
         // Calculate spending per category
         const spentByCategory: Record<string, number> = {};
@@ -173,10 +175,18 @@ export default function Budget() {
   const totalBudgetDoc = budgetsData.find((b: any) => b.category === 'total');
   const overallTotalBudget = totalBudgetDoc ? totalBudgetDoc.limit : 0;
 
-  const totalSpent = categories.reduce((sum, category) => sum + category.spent, 0);
-  // Show real negative value — do NOT clamp to 0
-  const remaining = overallTotalBudget - totalSpent;
+  // Total Spent = sum of ALL expenses (matches Dashboard)
+  const totalSpent = allExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0);
+
+  // Total category budget allocated (sum of non-total budget limits)
+  const totalCategoryBudget = budgetsData
+    .filter((b: any) => b.category !== 'total')
+    .reduce((sum: number, b: any) => sum + b.limit, 0);
+
+  // Remaining = overall budget limit minus allocated category budgets (matches Dashboard)
+  const remaining = overallTotalBudget - totalCategoryBudget;
   const isOverBudget = remaining < 0;
+  // Utilization based on actual spend vs overall budget
   const overallUtilization = overallTotalBudget === 0 ? 0 : (totalSpent / overallTotalBudget) * 100;
 
   const startEditing = (category: BudgetCategory) => {
@@ -195,13 +205,13 @@ export default function Budget() {
     try {
       const user = getUser();
       if (!user) return;
-      
+
       const response = await fetch("http://localhost:5000/api/budgets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
       });
-      
+
       if (response.ok) {
         setCategories((prev) =>
           prev.map((category) =>
@@ -238,7 +248,7 @@ export default function Budget() {
       const currentMembers = newGroupMembers.map(m => m.trim()).filter(Boolean);
       // Ensure the creator is implicitly in the group logic if not already typed
       if (!currentMembers.includes(userName)) {
-         currentMembers.push(userName);
+        currentMembers.push(userName);
       }
 
       const res = await fetch("http://localhost:5000/api/groups/create", {
@@ -422,14 +432,14 @@ export default function Budget() {
           <div className="budget-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ThemeToggle />
             <div className="tabs-container" style={{ display: 'flex', gap: '10px', marginRight: '20px', background: 'var(--color-gray-100)', padding: '4px', borderRadius: '8px' }}>
-              <button 
+              <button
                 className={`tab-btn ${activeTab === 'budgets' ? 'active' : ''}`}
                 onClick={() => setActiveTab('budgets')}
                 style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', fontWeight: 600, background: activeTab === 'budgets' ? 'var(--color-gray-50)' : 'transparent', color: activeTab === 'budgets' ? 'var(--color-primary)' : 'var(--color-gray-500)', boxShadow: activeTab === 'budgets' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
               >
                 My Budgets
               </button>
-              <button 
+              <button
                 className={`tab-btn ${activeTab === 'split' ? 'active' : ''}`}
                 onClick={() => setActiveTab('split')}
                 style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', fontWeight: 600, background: activeTab === 'split' ? 'var(--color-gray-50)' : 'transparent', color: activeTab === 'split' ? 'var(--color-primary)' : 'var(--color-gray-500)', boxShadow: activeTab === 'split' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -509,7 +519,7 @@ export default function Budget() {
                         )}
                       </svg>
                     </div>
-                    <h3 className="overview-title">Remaining</h3>
+                    <h3 className="overview-title">Unallocated Budget</h3>
                   </div>
                   <p className="overview-amount" style={{ color: isOverBudget ? 'var(--color-danger)' : 'var(--color-success)' }}>
                     {isOverBudget ? '-' : ''}₹{formatCurrency(Math.abs(remaining))}
@@ -517,7 +527,7 @@ export default function Budget() {
                   <div className="overview-footer">
                     {isOverBudget ? (
                       <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-danger)', background: 'var(--color-danger-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px' }}>
-                        ⚠️ Over Budget by ₹{formatCurrency(Math.abs(remaining))}
+                        ⚠️ Over Allocated by ₹{formatCurrency(Math.abs(remaining))}
                       </span>
                     ) : (
                       <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px' }}>
@@ -528,401 +538,401 @@ export default function Budget() {
                 </div>
               </div>
 
-          {/* Category Wise Total Budget Card */}
-          <div className="card" style={{ marginBottom: 'var(--space-8)' }}>
-            <div className="card-header-section">
-              <h3 className="card-title">Category Wise Total Budget</h3>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              {categories.map(c => (
-                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'var(--color-gray-100)', borderRadius: '0.5rem', border: '1px solid var(--color-gray-200)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>{c.emoji}</span>
-                    <span style={{ fontWeight: 500, color: 'var(--color-gray-700)' }}>{c.name}</span>
-                  </div>
-                  <span style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>₹{formatCurrency(c.budget)}</span>
+              {/* Category Wise Total Budget Card */}
+              <div className="card" style={{ marginBottom: 'var(--space-8)' }}>
+                <div className="card-header-section">
+                  <h3 className="card-title">Category Wise Total Budget</h3>
                 </div>
-              ))}
-              {categories.length === 0 && (
-                <div style={{ color: '#6b7280', padding: '1rem', fontStyle: 'italic' }}>No categories added yet.</div>
-              )}
-            </div>
 
-            {categories.length > 0 && (
-              <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-gray-200)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-gray-700)' }}>Total Category Budget</span>
-                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                  ₹{formatCurrency(categories.reduce((acc, c) => acc + c.budget, 0))}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Budget Categories — side by side grid */}
-          <div className="budget-categories">
-            {categories.map((category) => {
-              const { percent, barClass, cardClass, remainingLabel, remainingClass } =
-                getCategoryStats(category);
-
-              return (
-                <div
-                  key={category.id}
-                  className={`budget-card ${cardClass}`}
-                >
-                  <div className="budget-card-header">
-                    <div className="budget-category-info">
-                      <span className="budget-emoji">{category.emoji}</span>
-                      <div>
-                        <h3 className="budget-category-name">
-                          {category.name}
-                        </h3>
-                        <p className="budget-category-subtitle">
-                          {category.description}
-                        </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                  {categories.map(c => (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'var(--color-gray-100)', borderRadius: '0.5rem', border: '1px solid var(--color-gray-200)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>{c.emoji}</span>
+                        <span style={{ fontWeight: 500, color: 'var(--color-gray-700)' }}>{c.name}</span>
                       </div>
+                      <span style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>₹{formatCurrency(c.budget)}</span>
                     </div>
-                    <button
-                      className="budget-edit-btn"
-                      type="button"
-                      onClick={() => startEditing(category)}
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                      >
-                        <path
-                          d="M14 3L17 6L7 16H4V13L14 3Z"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </button>
+                  ))}
+                  {categories.length === 0 && (
+                    <div style={{ color: '#6b7280', padding: '1rem', fontStyle: 'italic' }}>No categories added yet.</div>
+                  )}
+                </div>
+
+                {categories.length > 0 && (
+                  <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-gray-200)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--color-gray-700)' }}>Total Category Budget</span>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                      ₹{formatCurrency(categories.reduce((acc, c) => acc + c.budget, 0))}
+                    </span>
                   </div>
-                  <div className="budget-amounts">
-                    <div className="budget-amount-item">
-                      <span className="budget-label">Spent</span>
-                      <span className="budget-value">
-                        ₹{formatCurrency(category.spent)}
-                      </span>
-                    </div>
-                    <div className="budget-amount-item">
-                      <span className="budget-label">Budget</span>
-                      {editingCategoryId === category.id ? (
-                        <div className="budget-edit-input-wrapper">
-                          <input
-                            type="number"
-                            min={0}
-                            className="budget-input"
-                            value={editingValue}
-                            onChange={(event) =>
-                              setEditingValue(event.target.value)
-                            }
-                            onBlur={() => saveEditing(category.id)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                saveEditing(category.id);
-                              }
-                              if (event.key === "Escape") {
-                                setEditingCategoryId(null);
-                                setEditingValue("");
-                              }
-                            }}
-                          />
+                )}
+              </div>
+
+              {/* Budget Categories — side by side grid */}
+              <div className="budget-categories">
+                {categories.map((category) => {
+                  const { percent, barClass, cardClass, remainingLabel, remainingClass } =
+                    getCategoryStats(category);
+
+                  return (
+                    <div
+                      key={category.id}
+                      className={`budget-card ${cardClass}`}
+                    >
+                      <div className="budget-card-header">
+                        <div className="budget-category-info">
+                          <span className="budget-emoji">{category.emoji}</span>
+                          <div>
+                            <h3 className="budget-category-name">
+                              {category.name}
+                            </h3>
+                            <p className="budget-category-subtitle">
+                              {category.description}
+                            </p>
+                          </div>
                         </div>
-                      ) : (
-                        <span className="budget-value total">
-                          ₹{formatCurrency(category.budget)}
-                        </span>
+                        <button
+                          className="budget-edit-btn"
+                          type="button"
+                          onClick={() => startEditing(category)}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                          >
+                            <path
+                              d="M14 3L17 6L7 16H4V13L14 3Z"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="budget-amounts">
+                        <div className="budget-amount-item">
+                          <span className="budget-label">Spent</span>
+                          <span className="budget-value">
+                            ₹{formatCurrency(category.spent)}
+                          </span>
+                        </div>
+                        <div className="budget-amount-item">
+                          <span className="budget-label">Budget</span>
+                          {editingCategoryId === category.id ? (
+                            <div className="budget-edit-input-wrapper">
+                              <input
+                                type="number"
+                                min={0}
+                                className="budget-input"
+                                value={editingValue}
+                                onChange={(event) =>
+                                  setEditingValue(event.target.value)
+                                }
+                                onBlur={() => saveEditing(category.id)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    saveEditing(category.id);
+                                  }
+                                  if (event.key === "Escape") {
+                                    setEditingCategoryId(null);
+                                    setEditingValue("");
+                                  }
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <span className="budget-value total">
+                              ₹{formatCurrency(category.budget)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="budget-progress">
+                        <div className="progress-bar-container">
+                          <div
+                            className={`progress-bar ${barClass}`}
+                            style={{ width: `${percent.toFixed(1)}%` }}
+                          ></div>
+                        </div>
+                        <div className="progress-info">
+                          <span className="progress-percentage">
+                            {percent.toFixed(1)}%
+                          </span>
+                          <span className={remainingClass}>{remainingLabel}</span>
+                        </div>
+                      </div>
+                      {category.id === "shopping" && barClass === "warning" && (
+                        <div className="budget-alert">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <path
+                              d="M8 4V8M8 11H8.005M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8Z"
+                              stroke="#F59E0B"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <span>Approaching budget limit</span>
+                        </div>
+                      )}
+                      {category.id === "bills" && barClass === "danger" && (
+                        <div className="budget-alert danger">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <path
+                              d="M8 4V8M8 11H8.005M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8Z"
+                              stroke="#EF4444"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <span>Budget exceeded</span>
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <div className="budget-progress">
-                    <div className="progress-bar-container">
-                      <div
-                        className={`progress-bar ${barClass}`}
-                        style={{ width: `${percent.toFixed(1)}%` }}
-                      ></div>
-                    </div>
-                    <div className="progress-info">
-                      <span className="progress-percentage">
-                        {percent.toFixed(1)}%
-                      </span>
-                      <span className={remainingClass}>{remainingLabel}</span>
-                    </div>
-                  </div>
-                  {category.id === "shopping" && barClass === "warning" && (
-                    <div className="budget-alert">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                      >
-                        <path
-                          d="M8 4V8M8 11H8.005M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8Z"
-                          stroke="#F59E0B"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <span>Approaching budget limit</span>
-                    </div>
-                  )}
-                  {category.id === "bills" && barClass === "danger" && (
-                    <div className="budget-alert danger">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                      >
-                        <path
-                          d="M8 4V8M8 11H8.005M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8Z"
-                          stroke="#EF4444"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <span>Budget exceeded</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-            {/* Add New Budget */}
-            <div className="add-budget-card">
-              <div className="add-budget-form" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <select className="form-input form-select" style={{ width: 'auto' }} id="new-budget-category">
-                  <option value="food">Food</option>
-                  <option value="travel">Travel</option>
-                  <option value="shopping">Shopping</option>
-                  <option value="bills">Bills</option>
-                  <option value="entertainment">Entertainment</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="education">Education</option>
-                  <option value="other">Other</option>
-                </select>
-                <input type="number" id="new-budget-amount" className="budget-input" placeholder="Budget Amount" style={{ padding: '0.5rem', border: '1px solid var(--color-gray-300)', borderRadius: '0.375rem' }} />
-                <button 
-                  className="add-budget-btn"
-                  onClick={async () => {
-                    const categorySelect = document.getElementById('new-budget-category') as HTMLSelectElement;
-                    const amountInput = document.getElementById('new-budget-amount') as HTMLInputElement;
-                    
-                    if (!categorySelect || !amountInput || !amountInput.value) return;
-                    
-                    const categoryId = categorySelect.value as BudgetCategoryId;
-                    const numericValue = Number(amountInput.value);
-                    
-                    // Check if already exists in categories list
-                    if (categories.some(c => c.id === categoryId)) {
-                       alert("You already have a budget for this category. Please edit the existing one.");
-                       return;
-                    }
-                    
-                    try {
-                      const user = getUser();
-                      if (!user) return;
-                      
-                      const response = await fetch("http://localhost:5000/api/budgets", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
-                      });
-                      
-                      if (response.ok) {
-                        amountInput.value = "";
-                        fetchBudgetsData(); // Refresh all budget data
-                      } else if (response.status === 400) {
-                        const data = await response.json();
-                        alert(data.message || "Cannot add category budget. Total budget limit exceeded.");
-                      } else {
-                        alert("Failed to add budget category");
-                      }
-                    } catch (e) {
-                      console.error(e);
-                      alert("Network error adding budget");
-                    }
-                  }}
-                  style={{ padding: '0.5rem 1rem', background: '#6366f1', color: 'white', borderRadius: '0.375rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-                    <path d="M16 10V22M10 16H22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  <span>Add Category</span>
-                </button>
+                  );
+                })}
               </div>
-            </div>
-          </>
-        )}
 
-        {activeTab === "split" && (
-          <div className="split-expenses-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
-                {groups.map(group => (
+              {/* Add New Budget */}
+              <div className="add-budget-card">
+                <div className="add-budget-form" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <select className="form-input form-select" style={{ width: 'auto' }} id="new-budget-category">
+                    <option value="food">Food</option>
+                    <option value="travel">Travel</option>
+                    <option value="shopping">Shopping</option>
+                    <option value="bills">Bills</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="education">Education</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <input type="number" id="new-budget-amount" className="budget-input" placeholder="Budget Amount" style={{ padding: '0.5rem', border: '1px solid var(--color-gray-300)', borderRadius: '0.375rem' }} />
                   <button
-                    key={group._id}
-                    onClick={() => handleGroupSelect(group._id)}
+                    className="add-budget-btn"
+                    onClick={async () => {
+                      const categorySelect = document.getElementById('new-budget-category') as HTMLSelectElement;
+                      const amountInput = document.getElementById('new-budget-amount') as HTMLInputElement;
+
+                      if (!categorySelect || !amountInput || !amountInput.value) return;
+
+                      const categoryId = categorySelect.value as BudgetCategoryId;
+                      const numericValue = Number(amountInput.value);
+
+                      // Check if already exists in categories list
+                      if (categories.some(c => c.id === categoryId)) {
+                        alert("You already have a budget for this category. Please edit the existing one.");
+                        return;
+                      }
+
+                      try {
+                        const user = getUser();
+                        if (!user) return;
+
+                        const response = await fetch("http://localhost:5000/api/budgets", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
+                        });
+
+                        if (response.ok) {
+                          amountInput.value = "";
+                          fetchBudgetsData(); // Refresh all budget data
+                        } else if (response.status === 400) {
+                          const data = await response.json();
+                          alert(data.message || "Cannot add category budget. Total budget limit exceeded.");
+                        } else {
+                          alert("Failed to add budget category");
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert("Network error adding budget");
+                      }
+                    }}
+                    style={{ padding: '0.5rem 1rem', background: '#6366f1', color: 'white', borderRadius: '0.375rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                      <path d="M16 10V22M10 16H22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>Add Category</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === "split" && (
+            <div className="split-expenses-section">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
+                  {groups.map(group => (
+                    <button
+                      key={group._id}
+                      onClick={() => handleGroupSelect(group._id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        border: '1px solid var(--color-gray-200)',
+                        background: activeGroupId === group._id ? 'var(--color-primary-light)' : 'var(--color-gray-100)',
+                        color: activeGroupId === group._id ? 'white' : 'var(--color-gray-600)',
+                        fontWeight: activeGroupId === group._id ? 600 : 400,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {group.groupName}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setShowCreateGroupModal(true)}
                     style={{
                       padding: '8px 16px',
                       borderRadius: '20px',
-                      border: '1px solid var(--color-gray-200)',
-                      background: activeGroupId === group._id ? 'var(--color-primary-light)' : 'var(--color-gray-100)',
-                      color: activeGroupId === group._id ? 'white' : 'var(--color-gray-600)',
-                      fontWeight: activeGroupId === group._id ? 600 : 400,
+                      border: '1px dashed var(--color-primary)',
+                      background: 'transparent',
+                      color: 'var(--color-primary)',
+                      fontWeight: 500,
                       cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    {group.groupName}
+                    <span>+ Create Group</span>
                   </button>
-                ))}
-                <button
-                  onClick={() => setShowCreateGroupModal(true)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    border: '1px dashed var(--color-primary)',
-                    background: 'transparent',
-                    color: 'var(--color-primary)',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <span>+ Create Group</span>
-                </button>
+                </div>
+
+                {activeGroupId && (
+                  <button
+                    onClick={() => setShowAddExpenseModal(true)}
+                    style={{
+                      padding: '8px 20px',
+                      background: '#6366f1',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 2px 4px rgba(99,102,241,0.2)'
+                    }}
+                  >
+                    <span>+ Add Split Expense</span>
+                  </button>
+                )}
               </div>
 
-              {activeGroupId && (
-                 <button
-                   onClick={() => setShowAddExpenseModal(true)}
-                   style={{
-                     padding: '8px 20px',
-                     background: '#6366f1',
-                     color: 'white',
-                     border: 'none',
-                     borderRadius: '8px',
-                     fontWeight: 600,
-                     cursor: 'pointer',
-                     display: 'flex',
-                     alignItems: 'center',
-                     gap: '8px',
-                     boxShadow: '0 2px 4px rgba(99,102,241,0.2)'
-                   }}
-                 >
-                   <span>+ Add Split Expense</span>
-                 </button>
+              {activeGroupId ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' }}>
+
+                  {/* Left side: Group Expenses Table */}
+                  <div className="card" style={{ padding: '20px' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px', color: 'var(--color-gray-900)' }}>Group Expenses</h3>
+                    <div className="table-wrapper">
+                      <table className="transactions-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Total Amount</th>
+                            <th>Paid By</th>
+                            <th>Split Among</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupExpenses.length > 0 ? groupExpenses.map((exp: any) => (
+                            <tr key={exp._id}>
+                              <td style={{ color: 'var(--color-gray-500)' }}>
+                                {new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              </td>
+                              <td style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>{exp.description}</td>
+                              <td style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                              <td style={{ color: 'var(--color-primary)', fontWeight: 500 }}>{exp.paidBy}</td>
+                              <td style={{ color: 'var(--color-gray-600)', fontSize: '0.875rem' }}>
+                                {exp.splitBetween.map((s: any) => s.member).join(', ')}
+                              </td>
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
+                                No expenses recorded for this group yet.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Right side: Balances Summary */}
+                  <div className="card" style={{ padding: '20px', background: 'var(--color-gray-100)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                      <div style={{ background: 'var(--color-primary-light)', padding: '8px', borderRadius: '8px', color: 'white', opacity: 0.8 }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.44 3.59 2.95 1.89.47 2.42 1.14 2.42 1.92 0 .9-.85 1.56-2.18 1.56-1.57 0-2.25-.8-2.3-1.88h-1.71c.06 1.75 1.13 2.89 2.8 3.25V19h2.39v-1.7c1.55-.37 2.8-1.35 2.8-2.92.01-1.92-1.51-2.61-3.68-3.24z" fill="currentColor" />
+                        </svg>
+                      </div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>Balance Summary</h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {groupBalances.transactions.length > 0 ? groupBalances.transactions.map((tx: any, i: number) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--color-gray-50)', borderRadius: '8px', border: '1px solid var(--color-gray-200)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Owes</span>
+                            <span style={{ fontWeight: 600, color: 'var(--color-danger)' }}>{tx.from}</span>
+                          </div>
+                          <div style={{ color: 'var(--color-gray-400)' }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                              <path d="M5 12h14m-4-4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Gets paid</span>
+                            <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>{tx.to}</span>
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-gray-900)', marginLeft: '12px' }}>
+                            ₹{tx.amount.toLocaleString('en-IN')}
+                          </div>
+                        </div>
+                      )) : (
+                        <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-gray-600)', fontSize: '0.9rem' }}>
+                          Balances are settled up!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-gray-100)', borderRadius: '12px', border: '1px dashed var(--color-gray-300)' }}>
+                  <div style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-gray-200)', color: 'var(--color-gray-500)', marginBottom: '16px' }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                      <path d="M17 20h5V4H2v16h5M7 15h10M7 11h10M7 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: '8px' }}>Select or create a Group</h3>
+                  <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 auto', lineHeight: 1.5 }}>
+                    Manage shared expenses among friends, family, or colleagues easily. Create a group to start tracking splits automatically!
+                  </p>
+                </div>
               )}
             </div>
-
-            {activeGroupId ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' }}>
-                
-                {/* Left side: Group Expenses Table */}
-                <div className="card" style={{ padding: '20px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px', color: 'var(--color-gray-900)' }}>Group Expenses</h3>
-                  <div className="table-wrapper">
-                    <table className="transactions-table">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Description</th>
-                          <th>Total Amount</th>
-                          <th>Paid By</th>
-                          <th>Split Among</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groupExpenses.length > 0 ? groupExpenses.map((exp: any) => (
-                          <tr key={exp._id}>
-                            <td style={{ color: 'var(--color-gray-500)' }}>
-                              {new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                            </td>
-                            <td style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>{exp.description}</td>
-                            <td style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-                            <td style={{ color: 'var(--color-primary)', fontWeight: 500 }}>{exp.paidBy}</td>
-                            <td style={{ color: 'var(--color-gray-600)', fontSize: '0.875rem' }}>
-                              {exp.splitBetween.map((s: any) => s.member).join(', ')}
-                            </td>
-                          </tr>
-                        )) : (
-                          <tr>
-                            <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
-                              No expenses recorded for this group yet.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Right side: Balances Summary */}
-                <div className="card" style={{ padding: '20px', background: 'var(--color-gray-100)' }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                     <div style={{ background: 'var(--color-primary-light)', padding: '8px', borderRadius: '8px', color: 'white', opacity: 0.8 }}>
-                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.44 3.59 2.95 1.89.47 2.42 1.14 2.42 1.92 0 .9-.85 1.56-2.18 1.56-1.57 0-2.25-.8-2.3-1.88h-1.71c.06 1.75 1.13 2.89 2.8 3.25V19h2.39v-1.7c1.55-.37 2.8-1.35 2.8-2.92.01-1.92-1.51-2.61-3.68-3.24z" fill="currentColor"/>
-                       </svg>
-                     </div>
-                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>Balance Summary</h3>
-                   </div>
-                   
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                     {groupBalances.transactions.length > 0 ? groupBalances.transactions.map((tx: any, i: number) => (
-                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--color-gray-50)', borderRadius: '8px', border: '1px solid var(--color-gray-200)' }}>
-                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                           <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Owes</span>
-                           <span style={{ fontWeight: 600, color: 'var(--color-danger)' }}>{tx.from}</span>
-                         </div>
-                         <div style={{ color: 'var(--color-gray-400)' }}>
-                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                             <path d="M5 12h14m-4-4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                           </svg>
-                         </div>
-                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                           <span style={{ fontSize: '0.875rem', color: 'var(--color-gray-500)' }}>Gets paid</span>
-                           <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>{tx.to}</span>
-                         </div>
-                         <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-gray-900)', marginLeft: '12px' }}>
-                           ₹{tx.amount.toLocaleString('en-IN')}
-                         </div>
-                       </div>
-                     )) : (
-                       <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-gray-600)', fontSize: '0.9rem' }}>
-                         Balances are settled up!
-                       </div>
-                     )}
-                   </div>
-                </div>
-
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-gray-100)', borderRadius: '12px', border: '1px dashed var(--color-gray-300)' }}>
-                <div style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-gray-200)', color: 'var(--color-gray-500)', marginBottom: '16px' }}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                    <path d="M17 20h5V4H2v16h5M7 15h10M7 11h10M7 7h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: '8px' }}>Select or create a Group</h3>
-                <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 auto', lineHeight: 1.5 }}>
-                  Manage shared expenses among friends, family, or colleagues easily. Create a group to start tracking splits automatically!
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+          )}
         </div>
       </main>
 
@@ -931,12 +941,12 @@ export default function Budget() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'var(--color-gray-100)', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-gray-200)' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px', color: 'var(--color-gray-900)' }}>Create New Group</h2>
-            
+
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Group Name</label>
-              <input 
-                type="text" 
-                value={newGroupName} 
+              <input
+                type="text"
+                value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
                 placeholder="e.g., Goa Trip 2026"
@@ -947,9 +957,9 @@ export default function Budget() {
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Members (Names)</label>
               {newGroupMembers.map((member, index) => (
                 <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                  <input 
-                    type="text" 
-                    value={member} 
+                  <input
+                    type="text"
+                    value={member}
                     onChange={(e) => {
                       const updated = [...newGroupMembers];
                       updated[index] = e.target.value;
@@ -959,25 +969,25 @@ export default function Budget() {
                     placeholder="Member name"
                   />
                   {newGroupMembers.length > 1 && (
-                    <button 
+                    <button
                       onClick={() => setNewGroupMembers(newGroupMembers.filter((_, i) => i !== index))}
                       style={{ padding: '8px', background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                     >Remove</button>
                   )}
                 </div>
               ))}
-              <button 
+              <button
                 onClick={() => setNewGroupMembers([...newGroupMembers, ""])}
                 style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
               >+ Add Member</button>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button 
+              <button
                 onClick={() => setShowCreateGroupModal(false)}
                 style={{ padding: '8px 16px', border: '1px solid var(--color-gray-300)', background: 'var(--color-gray-100)', color: 'var(--color-gray-700)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
               >Cancel</button>
-              <button 
+              <button
                 onClick={handleCreateGroup}
                 style={{ padding: '8px 16px', border: 'none', background: 'var(--color-primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
               >Create Group</button>
@@ -991,12 +1001,12 @@ export default function Budget() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px' }}>Add Split Expense</h2>
-            
+
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#4b5563' }}>Description</label>
-              <input 
-                type="text" 
-                value={splitDesc} 
+              <input
+                type="text"
+                value={splitDesc}
                 onChange={(e) => setSplitDesc(e.target.value)}
                 style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--color-gray-200)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
                 placeholder="e.g., Dinner at Taj"
@@ -1007,9 +1017,9 @@ export default function Budget() {
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Total Amount</label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '12px', top: '10px', color: 'var(--color-gray-400)' }}>₹</span>
-                <input 
-                  type="number" 
-                  value={splitAmount} 
+                <input
+                  type="number"
+                  value={splitAmount}
                   onChange={(e) => setSplitAmount(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px 10px 28px', border: '1px solid var(--color-gray-200)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
                   placeholder="0.00"
@@ -1019,8 +1029,8 @@ export default function Budget() {
 
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#4b5563' }}>Paid By</label>
-              <select 
-                value={splitPaidBy} 
+              <select
+                value={splitPaidBy}
                 onChange={(e) => setSplitPaidBy(e.target.value)}
                 style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--color-gray-200)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
               >
@@ -1036,8 +1046,8 @@ export default function Budget() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {groups.find(g => g._id === activeGroupId)?.members.map((m: string) => (
                   <label key={m} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem' }}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={splitInvolvedMembers.includes(m)}
                       onChange={(e) => {
                         if (e.target.checked) setSplitInvolvedMembers([...splitInvolvedMembers, m]);
@@ -1052,11 +1062,11 @@ export default function Budget() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button 
+              <button
                 onClick={() => setShowAddExpenseModal(false)}
                 style={{ padding: '8px 16px', border: '1px solid var(--color-gray-200)', background: 'var(--color-gray-50)', color: 'var(--color-gray-700)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
               >Cancel</button>
-              <button 
+              <button
                 onClick={handleAddSplitExpense}
                 style={{ padding: '8px 16px', border: 'none', background: '#6366f1', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
               >Save Split Expense</button>
