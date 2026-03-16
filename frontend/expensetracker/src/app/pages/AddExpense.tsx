@@ -18,6 +18,8 @@ export default function AddExpense() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const [receiptImagePath, setReceiptImagePath] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
 
   const getCategoryEmoji = (cat: string) => {
     switch (cat) {
@@ -132,6 +134,8 @@ export default function AddExpense() {
 
 
   useEffect(() => {
+    const user = getUser();
+    setCurrentUser(user);
     fetchRecentExpenses();
   }, []);
   
@@ -286,12 +290,70 @@ export default function AddExpense() {
             <div className="expense-form-container">
               {showReceiptScanner ? (
                 <ReceiptUploader
-                  onExtracted={({ amount: extracted, receiptImagePath: pathFromServer }) => {
+                  onExtracted={(data: any) => {
+                    const { amount: extracted, receiptImagePath: pathFromServer, detectedCategory, items } = data;
+                    setAnalysisResults(data); // Save for splitting
                     if (typeof extracted === "number") setAmount(String(extracted));
                     if (pathFromServer) setReceiptImagePath(pathFromServer);
+                    if (detectedCategory) setCategory(detectedCategory);
+                    
+                    if (items && items.length > 1) {
+                      setDescription(`Itemized bill: ${items.map((i: any) => i.description).join(", ")}`);
+                    }
                   }}
                 />
               ) : null}
+
+              {/* Multi-item Split Helper - Only for multi-category bills like DMart */}
+              {analysisResults?.isMultiCategory && analysisResults?.items?.length > 1 && (
+                <div className="card" style={{ marginBottom: "1rem", border: "1px dashed var(--color-primary)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem" }}>
+                    <div>
+                      <h3 style={{ fontSize: "1rem", marginBottom: "4px" }}>Split-Category Bill Detected</h3>
+                      <p style={{ fontSize: "0.85rem", opacity: 0.7 }}>We found {analysisResults.items.length} individual items. Would you like to add them all as separate expenses?</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary btn-sm"
+                      onClick={async () => {
+                        const confirmSplit = window.confirm(`This will add ${analysisResults.items.length} separate expenses. Continue?`);
+                        if (!confirmSplit) return;
+                        
+                        setLoading(true);
+                        try {
+                          const user = getUser();
+                          for (const item of analysisResults.items) {
+                            await fetch("http://localhost:5000/api/expenses", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                userId: user.id,
+                                amount: item.amount,
+                                category: item.category,
+                                date: date,
+                                paymentMethod: paymentMethod,
+                                description: item.description,
+                                receiptImagePath: receiptImagePath || undefined
+                              })
+                            });
+                          }
+                          alert("All items added individually!");
+                          setAnalysisResults(null);
+                          setAmount("");
+                          setDescription("");
+                          await fetchRecentExpenses();
+                        } catch (err) {
+                          alert("Error splitting expenses");
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                    >
+                      Split & Save All
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="card">
                 <div className="card-header-section">
                   <h2 className="card-title">Expense Details</h2>
@@ -301,7 +363,7 @@ export default function AddExpense() {
                   <div className="form-group">
                     <label htmlFor="amount" className="form-label required">Amount</label>
                     <div className="amount-input-wrapper">
-                      <span className="currency-symbol">₹</span>
+                      <span className="currency-symbol">{currentUser?.currency === 'USD' ? '$' : '₹'}</span>
                       <input
                         type="text"
                         id="amount"
@@ -519,7 +581,7 @@ export default function AddExpense() {
                     <div className="summary-stats">
                       <div className="summary-stat">
                         <span className="summary-label">Total Spent</span>
-                        <span className="summary-value primary">₹{todayTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        <span className="summary-value primary">{currentUser?.currency === 'USD' ? '$' : '₹'}{todayTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
 
                       </div>
                       <div className="summary-divider"></div>
@@ -537,7 +599,7 @@ export default function AddExpense() {
                               <span className="breakdown-icon">{getEmoji(cat)}</span>
                               <span className="breakdown-name" style={{textTransform: 'capitalize'}}>{cat}</span>
                             </div>
-                            <span className="breakdown-amount">₹{(amt as number).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                            <span className="breakdown-amount">{currentUser?.currency === 'USD' ? '$' : '₹'}{(amt as number).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
 
                           </div>
                         ))}
@@ -566,7 +628,7 @@ export default function AddExpense() {
                           <p className="transaction-name">{exp.description ? String(exp.description) : `${String(exp.category)} expense`}</p>
                           <p className="transaction-time">{new Date(exp.date || exp.createdAt).toLocaleDateString()}</p>
                         </div>
-                        <span className="transaction-amount">₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        <span className="transaction-amount">{currentUser?.currency === 'USD' ? '$' : '₹'}{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
 
                       </div>
                     );

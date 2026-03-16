@@ -83,6 +83,8 @@ const budgetRoutes = require("../routes/budgetRoutes");
 const reportRoutes = require("../routes/reportRoutes");
 const alertRoutes = require("../routes/alertRoutes");
 const groupRoutes = require("../routes/groupRoutes");
+const receiptRoutes = require("../routes/receiptRoutes");
+const path = require("path");
 // const adminRoutes = require("../routes/adminRoutes");
 
 app.use("/api/auth", authRoutes);
@@ -91,6 +93,10 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/receipts", receiptRoutes);
+
+// Static folder for uploads
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 
 // Test route
