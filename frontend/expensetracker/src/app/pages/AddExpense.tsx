@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
+import ReceiptUploader from "../components/ReceiptUploader";
 
 export default function AddExpense() {
   const navigate = useNavigate();
@@ -15,6 +16,98 @@ export default function AddExpense() {
   const [recentExpenses, setRecentExpenses] = useState<any[]>([]);
   const [budgets, setBudgets] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [receiptImagePath, setReceiptImagePath] = useState("");
+
+  const getCategoryEmoji = (cat: string) => {
+    switch (cat) {
+      case "food":
+        return "🍔";
+      case "travel":
+        return "🚕";
+      case "shopping":
+        return "🛍️";
+      case "bills":
+        return "📄";
+      case "entertainment":
+        return "🎬";
+      case "healthcare":
+        return "🏥";
+      case "education":
+        return "📚";
+      default:
+        return "💼";
+    }
+  };
+
+  type QuickAction = {
+    key: string;
+    category: string;
+    amount: number;
+    paymentMethod?: string;
+    description?: string;
+    count: number;
+    lastUsedAt: number;
+  };
+
+  const quickActions = useMemo<QuickAction[]>(() => {
+    // Goal: show *frequently repeated* expense patterns (recurring in practice),
+    // not hardcoded examples. We rank by frequency (primary) and recency (tie-break).
+    const now = Date.now();
+    const windowDays = 90;
+    const windowMs = windowDays * 24 * 60 * 60 * 1000;
+    const minCount = 2;
+    const maxActions = 6;
+
+    const normalize = (s: unknown) =>
+      String(s ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+
+    const buckets = new Map<string, QuickAction>();
+
+    for (const e of recentExpenses || []) {
+      const amt = Number((e as any).amount);
+      if (!Number.isFinite(amt) || amt <= 0) continue;
+
+      const cat = String((e as any).category ?? "other").toLowerCase();
+      const pm = normalize((e as any).paymentMethod);
+      const desc = normalize((e as any).description);
+
+      const when = new Date((e as any).date || (e as any).createdAt || now).getTime();
+      if (!Number.isFinite(when)) continue;
+      if (now - when > windowMs) continue;
+
+      // Pattern key: same category + same amount + same "item"/note + same payment method.
+      // If description is empty, it still forms a useful repeating pattern (e.g., daily commute).
+      const key = [cat, amt.toFixed(2), desc, pm].join("|");
+
+      const existing = buckets.get(key);
+      if (!existing) {
+        buckets.set(key, {
+          key,
+          category: cat,
+          amount: amt,
+          paymentMethod: pm || undefined,
+          description: desc || undefined,
+          count: 1,
+          lastUsedAt: when,
+        });
+      } else {
+        existing.count += 1;
+        existing.lastUsedAt = Math.max(existing.lastUsedAt, when);
+      }
+    }
+
+    return Array.from(buckets.values())
+      .filter((x) => x.count >= minCount)
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return b.lastUsedAt - a.lastUsedAt;
+      })
+      .slice(0, maxActions);
+  }, [recentExpenses]);
 
 
   const fetchRecentExpenses = async () => {
@@ -63,7 +156,8 @@ export default function AddExpense() {
           date,
           paymentMethod,
           description,
-          isRecurring
+          isRecurring,
+          receiptImagePath: receiptImagePath || undefined
         })
       });
 
@@ -71,6 +165,7 @@ export default function AddExpense() {
         alert("Expense added successfully!");
         setAmount("");
         setDescription("");
+        setReceiptImagePath("");
         await fetchRecentExpenses(); // Dynamic update without refresh
       } else {
         const errorData = await response.json();
@@ -164,6 +259,17 @@ export default function AddExpense() {
           </div>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ThemeToggle />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowReceiptScanner((v) => !v)}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M6 3H14M6 3V6M14 3V6M4 7H16V17H4V7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M7 10H13M7 13H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              Upload Receipt
+            </button>
             <button className="btn btn-secondary" onClick={() => navigate('/dashboard/transactions')}>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M3 3V17H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -178,6 +284,14 @@ export default function AddExpense() {
           <div className="expense-layout">
             {/* Left: Expense Form */}
             <div className="expense-form-container">
+              {showReceiptScanner ? (
+                <ReceiptUploader
+                  onExtracted={({ amount: extracted, receiptImagePath: pathFromServer }) => {
+                    if (typeof extracted === "number") setAmount(String(extracted));
+                    if (pathFromServer) setReceiptImagePath(pathFromServer);
+                  }}
+                />
+              ) : null}
               <div className="card">
                 <div className="card-header-section">
                   <h2 className="card-title">Expense Details</h2>
@@ -343,22 +457,34 @@ export default function AddExpense() {
               <div className="quick-actions-card">
                 <h3 className="quick-actions-title">Quick Actions</h3>
                 <div className="quick-actions-grid">
-                  <button className="quick-action-btn">
-                    <span className="quick-action-icon">🍕</span>
-                    <span>Lunch - ₹200</span>
-                  </button>
-                  <button className="quick-action-btn">
-                    <span className="quick-action-icon">🚕</span>
-                    <span>Taxi - ₹150</span>
-                  </button>
-                  <button className="quick-action-btn">
-                    <span className="quick-action-icon">☕</span>
-                    <span>Coffee - ₹80</span>
-                  </button>
-                  <button className="quick-action-btn">
-                    <span className="quick-action-icon">🎬</span>
-                    <span>Movie - ₹300</span>
-                  </button>
+                  {quickActions.length > 0 ? (
+                    quickActions.map((qa) => (
+                      <button
+                        key={qa.key}
+                        type="button"
+                        className="quick-action-btn"
+                        title={`Used ${qa.count} times recently`}
+                        onClick={() => {
+                          setAmount(String(qa.amount));
+                          setCategory(qa.category || "other");
+                          if (qa.paymentMethod) setPaymentMethod(qa.paymentMethod);
+                          setDescription(qa.description ? qa.description : "");
+                          setIsRecurring(qa.count >= 3);
+                        }}
+                      >
+                        <span className="quick-action-icon">{getCategoryEmoji(qa.category)}</span>
+                        <span>
+                          {(qa.description ? qa.description : qa.category).replace(/^\w/, (c) => c.toUpperCase())} - ₹
+                          {qa.amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                          {qa.count >= 3 ? " • Often" : ""}
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div style={{ color: "var(--color-gray-500)", fontSize: "0.9rem" }}>
+                      Add a few repeated expenses and your most-used ones will appear here automatically.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -381,16 +507,7 @@ export default function AddExpense() {
                 }, {} as Record<string, number>);
 
                 const getEmoji = (cat: string) => {
-                  switch (cat) {
-                    case 'food': return '🍔';
-                    case 'travel': return '🚕';
-                    case 'shopping': return '🛍️';
-                    case 'bills': return '📄';
-                    case 'entertainment': return '🎬';
-                    case 'healthcare': return '🏥';
-                    case 'education': return '📚';
-                    default: return '💼';
-                  }
+                  return getCategoryEmoji(cat);
                 };
 
                 return (
@@ -440,16 +557,7 @@ export default function AddExpense() {
                   {recentExpenses.length > 0 ? recentExpenses.slice(0, 4).map(exp => {
                     const getTheme = (cat: string) => ['food', 'travel', 'shopping', 'bills'].includes(cat) ? cat : 'other';
                     const getEmoji = (cat: string) => {
-                      switch (cat) {
-                        case 'food': return '🍔';
-                        case 'travel': return '🚕';
-                        case 'shopping': return '🛍️';
-                        case 'bills': return '📄';
-                        case 'entertainment': return '🎬';
-                        case 'healthcare': return '🏥';
-                        case 'education': return '📚';
-                        default: return '💼';
-                      }
+                      return getCategoryEmoji(cat);
                     };
                     return (
                       <div className="transaction-item" key={exp._id}>
