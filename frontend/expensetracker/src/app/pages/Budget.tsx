@@ -236,6 +236,30 @@ export default function Budget() {
     setEditingValue("");
   };
 
+  const deleteBudgetCategory = async (categoryId: BudgetCategoryId) => {
+    try {
+      const user = getUser();
+      if (!user) return;
+
+      if (!window.confirm("Are you sure you want to delete this budget category?")) return;
+
+      const response = await fetch(`http://localhost:5000/api/budgets/${categoryId}?userId=${user.id}`, {
+        method: "DELETE"
+      });
+
+      if (response.ok) {
+        setCategories((prev) => prev.filter(c => c.id !== categoryId));
+        fetchBudgetsData();
+      } else {
+        const data = await response.json();
+        alert(data.message || "Failed to delete budget");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error deleting budget");
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!newGroupName.trim() || newGroupMembers.some(m => !m.trim())) {
       alert("Please fill all group fields");
@@ -592,25 +616,29 @@ export default function Budget() {
                             </p>
                           </div>
                         </div>
-                        <button
-                          className="budget-edit-btn"
-                          type="button"
-                          onClick={() => startEditing(category)}
-                        >
-                          <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 20 20"
-                            fill="none"
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            className="budget-edit-btn"
+                            type="button"
+                            onClick={() => startEditing(category)}
+                            title="Edit Budget"
                           >
-                            <path
-                              d="M14 3L17 6L7 16H4V13L14 3Z"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                        </button>
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                              <path d="M14 3L17 6L7 16H4V13L14 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                          <button
+                            className="budget-edit-btn"
+                            type="button"
+                            onClick={() => deleteBudgetCategory(category.id)}
+                            style={{ color: 'var(--color-danger)' }}
+                            title="Delete Budget"
+                          >
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                              <path d="M4 5H16M6 5V15C6 16.1046 6.89543 17 8 17H12C13.1046 17 14 16.1046 14 15V5M8 5V3C8 2.44772 8.44772 2 9 2H11C11.5523 2 12 2.44772 12 3V5M8 9V13M12 9V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div className="budget-amounts">
                         <div className="budget-amount-item">
