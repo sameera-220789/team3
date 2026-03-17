@@ -126,7 +126,8 @@
 .dark .quick-actions-card,
 .dark .overview-card,
 .dark .user-panel,
-.dark .form-select {
+.dark .form-select,
+.dark .chart-filter {
   background-color: #1e1e1e !important;
   color: var(--color-gray-800);
   border-color: var(--color-gray-300);
@@ -175,6 +176,31 @@
 
 .dark .budget-card {
   background-color: #1e1e1e !important;
+}
+
+.profile-hero-text {
+  color: white; /* Needs white explicitly to contrast the gradient */
+}
+
+/* Glass card styling supporting both modes */
+.profile-glass-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  color: var(--color-gray-900); /* Dark text for light mode glass */
+}
+.dark .profile-glass-card {
+  background: rgba(30, 30, 30, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-gray-900); /* Will automatically inherit #f9fafb via base dark css */
 }
 
 .dark .budget-card.warning-card {

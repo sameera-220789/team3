@@ -102,7 +102,7 @@ exports.scanReceipt = async (req, res) => {
     const localKeywords = ["GST", "INR", "RS.", "RS ", "RUPEE", "₹", "RP", "RUPIAH", "INDIA", "PUNE", "MUMBAI", "AHMEDABAD", "TELANGANA"];
     const hasLocalContext = localKeywords.some(kw => textUpper.includes(kw)) || 
                              /\b(DAAL|MAKHNI|CHAPATI|BIRYANI|ROTI|PANEER|DOSA|CHICKEN|MASALA)\b/.test(textUpper);
-    const hasDollar = (/\b\$\s*\d|\s\$\d|\bUSD\b/.test(text));
+    const hasDollar = (/(?:^|\s)\$\s*\d|\bUSD\b/i.test(text));
     
     let detectedCurrency = (hasDollar && !hasLocalContext) ? "USD" : "INR";
     if (!hasDollar && !hasLocalContext) detectedCurrency = userProfileCurrency;
@@ -112,7 +112,7 @@ exports.scanReceipt = async (req, res) => {
     let possibleAmounts = [];
     let extractedItems = [];
     const ignoreKeywords = /bill\s*no|id|trans\b|date\b|time\b|phone|tel|tin|gstin|hsn|sac/i;
-    const totalKeywordsRegex = /\b(grand\s*total|total|total\s*due|net\s*pay|payable|sum|amt|t:)/i;
+    const totalKeywordsRegex = /(grand\s*total|total|total\s*due|net\s*pay|payable|sum|amt|t:|paid|amount|charge|payment|gross|balance)/i;
 
     const isDateOrId = (n) => {
         if (!n || n.length > 10) return true;
@@ -171,7 +171,17 @@ exports.scanReceipt = async (req, res) => {
         }
     }
 
-    if (rawTotalAmount === null && possibleAmounts.length > 0) rawTotalAmount = possibleAmounts[0];
+    if (rawTotalAmount === null && possibleAmounts.length > 0) {
+        // Find if any possible amount matches the sum of items
+        const itemSum = extractedItems.reduce((acc, curr) => acc + curr.amount, 0);
+        if (itemSum > 0) {
+            // Find an amount close to the item sum (e.g. including taxes)
+            const matchedTotal = possibleAmounts.find(a => a >= itemSum && a <= itemSum * 1.5);
+            rawTotalAmount = matchedTotal || itemSum;
+        } else {
+            rawTotalAmount = possibleAmounts[0];
+        }
+    }
 
     // 4. Category Intelligence (Majority-Item Logic)
     let finalCategory = classify(text, merchantName);
@@ -186,11 +196,19 @@ exports.scanReceipt = async (req, res) => {
         if (sorted.length > 0) finalCategory = sorted[0][0];
     }
 
-    // 5. Currency Engine
+    // 5. Currency Engine Restored
+    console.log("--------------- RECEIPT PARSER DEBUG ---------------");
+    console.log("Raw Text Sample:", text.substring(0, 300));
+    console.log("Detected Items:", extractedItems);
+    console.log("Raw Total Selected:", rawTotalAmount);
+    console.log("Detected Currency:", detectedCurrency, "| User Currency:", userProfileCurrency);
+    console.log("----------------------------------------------------");
+
     const EX_RATE = 83.5;
     let finalAmount = rawTotalAmount || 0;
     let conversionNote = "";
     
+    // Only apply conversion if the receipt EXPLICITLY has $ or USD and NO local keywords
     if (userProfileCurrency !== detectedCurrency) {
         if (userProfileCurrency === "INR" && detectedCurrency === "USD") {
             finalAmount = Number((finalAmount * EX_RATE).toFixed(2));
@@ -202,7 +220,6 @@ exports.scanReceipt = async (req, res) => {
             extractedItems = extractedItems.map(it => ({ ...it, amount: Number((it.amount / EX_RATE).toFixed(2)) }));
         }
     }
-
     res.json({
       message: "Receipt analyzed successfully",
       amount: finalAmount,

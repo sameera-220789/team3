@@ -290,70 +290,86 @@ export default function AddExpense() {
             <div className="expense-form-container">
               {showReceiptScanner ? (
                 <ReceiptUploader
-                  onExtracted={(data: any) => {
-                    const { amount: extracted, receiptImagePath: pathFromServer, detectedCategory, items } = data;
-                    setAnalysisResults(data); // Save for splitting
-                    if (typeof extracted === "number") setAmount(String(extracted));
-                    if (pathFromServer) setReceiptImagePath(pathFromServer);
-                    if (detectedCategory) setCategory(detectedCategory);
+                  onExtracted={async (data: any) => {
+                    const { amount: extracted, receiptImagePath: pathFromServer, detectedCategory, items, isMultiCategory } = data;
                     
-                    if (items && items.length > 1) {
-                      setDescription(`Itemized bill: ${items.map((i: any) => i.description).join(", ")}`);
+                    setLoading(true);
+                    try {
+                      const user = getUser();
+                      if (!user) {
+                        alert("Please login first");
+                        return;
+                      }
+
+                      let shouldSplit = isMultiCategory && items && items.length > 1;
+                      if (detectedCategory === "food") {
+                        shouldSplit = false;
+                      }
+
+                      const currencySymbol = currentUser?.currency === 'USD' ? '$' : '₹';
+                      const confirmMsg = shouldSplit
+                        ? `Scanned receipt with ${items.length} items. Add them as separate expenses?\nClick OK (Yes) to add, Cancel (No) to abort.`
+                        : `Scanned total of ${currencySymbol}${extracted} for category '${detectedCategory || "other"}'. Add this expense?\nClick OK (Yes) to add, Cancel (No) to abort.`;
+
+                      const confirmAdd = window.confirm(confirmMsg);
+                      if (!confirmAdd) {
+                        setLoading(false);
+                        return;
+                      }
+
+                      if (shouldSplit) {
+                        for (const item of items) {
+                          await fetch("http://localhost:5000/api/expenses", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              userId: user.id,
+                              amount: item.amount,
+                              category: item.category,
+                              date: date,
+                              paymentMethod: paymentMethod,
+                              description: item.description,
+                              receiptImagePath: pathFromServer || undefined
+                            })
+                          });
+                        }
+                        alert("Receipt scanned and all items added successfully!");
+                      } else {
+                        let desc = "";
+                        if (items && items.length > 1) {
+                           desc = `Itemized bill: ${items.map((i: any) => i.description).join(", ")}`;
+                        }
+                        await fetch("http://localhost:5000/api/expenses", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            userId: user.id,
+                            amount: extracted,
+                            category: detectedCategory || "other",
+                            date: date,
+                            paymentMethod: paymentMethod,
+                            description: desc,
+                            receiptImagePath: pathFromServer || undefined
+                          })
+                        });
+                        alert("Receipt scanned and expense added successfully!");
+                      }
+                      
+                      setAmount("");
+                      setDescription("");
+                      setReceiptImagePath("");
+                      setAnalysisResults(null);
+                      setShowReceiptScanner(false);
+                      await fetchRecentExpenses();
+                    } catch (err) {
+                      console.error("Auto submit error", err);
+                      alert("Error automatically adding expense");
+                    } finally {
+                      setLoading(false);
                     }
                   }}
                 />
               ) : null}
-
-              {/* Multi-item Split Helper - Only for multi-category bills like DMart */}
-              {analysisResults?.isMultiCategory && analysisResults?.items?.length > 1 && (
-                <div className="card" style={{ marginBottom: "1rem", border: "1px dashed var(--color-primary)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem" }}>
-                    <div>
-                      <h3 style={{ fontSize: "1rem", marginBottom: "4px" }}>Split-Category Bill Detected</h3>
-                      <p style={{ fontSize: "0.85rem", opacity: 0.7 }}>We found {analysisResults.items.length} individual items. Would you like to add them all as separate expenses?</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      className="btn btn-primary btn-sm"
-                      onClick={async () => {
-                        const confirmSplit = window.confirm(`This will add ${analysisResults.items.length} separate expenses. Continue?`);
-                        if (!confirmSplit) return;
-                        
-                        setLoading(true);
-                        try {
-                          const user = getUser();
-                          for (const item of analysisResults.items) {
-                            await fetch("http://localhost:5000/api/expenses", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                userId: user.id,
-                                amount: item.amount,
-                                category: item.category,
-                                date: date,
-                                paymentMethod: paymentMethod,
-                                description: item.description,
-                                receiptImagePath: receiptImagePath || undefined
-                              })
-                            });
-                          }
-                          alert("All items added individually!");
-                          setAnalysisResults(null);
-                          setAmount("");
-                          setDescription("");
-                          await fetchRecentExpenses();
-                        } catch (err) {
-                          alert("Error splitting expenses");
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                    >
-                      Split & Save All
-                    </button>
-                  </div>
-                </div>
-              )}
               <div className="card">
                 <div className="card-header-section">
                   <h2 className="card-title">Expense Details</h2>
@@ -616,7 +632,7 @@ export default function AddExpense() {
                   <Link to="/dashboard/transactions" className="view-all-link">View all</Link>
                 </div>
                 <div className="recent-transactions">
-                  {recentExpenses.length > 0 ? recentExpenses.slice(0, 4).map(exp => {
+                  {recentExpenses.length > 0 ? [...recentExpenses].reverse().slice(0, 4).map(exp => {
                     const getTheme = (cat: string) => ['food', 'travel', 'shopping', 'bills'].includes(cat) ? cat : 'other';
                     const getEmoji = (cat: string) => {
                       return getCategoryEmoji(cat);
@@ -641,7 +657,8 @@ export default function AddExpense() {
               {/* Budget Alert (Dynamic logic) */}
               {(() => {
                 const totalSpent = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
-                const totalBudget = budgets.reduce((sum, b) => sum + b.limit, 0);
+                const totalBudgetDoc = budgets.find((b: any) => b.category === 'total');
+                const totalBudget = totalBudgetDoc ? totalBudgetDoc.limit : 0;
                 const utilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
                 
                 // Get most relevant alert
