@@ -25,7 +25,8 @@ exports.addExpense = async (req, res) => {
     const budgets = await Budget.find({ userId });
 
     const totalSpentBefore = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
-    const totalBudget = budgets.reduce((sum, b) => sum + Number(b.limit), 0);
+    const totalBudgetDoc = budgets.find(b => b.category === 'total');
+    const totalBudget = totalBudgetDoc ? Number(totalBudgetDoc.limit) : 0;
     const remainingBudget = totalBudget - totalSpentBefore;
 
     // 3. Category-wise Budget Protection
@@ -42,7 +43,7 @@ exports.addExpense = async (req, res) => {
 
     // 4. Prevent Budget From Going Negative / Prevent Addition After Limit
     if (totalBudget > 0 && totalSpentBefore + expenseAmount > totalBudget) {
-      return res.status(400).json({ message: "Cannot add expense. Budget limit exceeded." });
+      return res.status(400).json({ message: "Cannot add expense. Overall Budget limit exceeded." });
     }
 
     // 5. Save Expense
@@ -66,35 +67,38 @@ exports.addExpense = async (req, res) => {
     let threshold = 0;
 
     if (usagePercent >= 100) {
-      alertMsg = "Your budget limit has been reached.";
+      alertMsg = "Your overall budget limit has been reached.";
       threshold = 100;
     } else if (usagePercent >= 90) {
-      alertMsg = "Warning: You have used 90% of your budget.";
+      alertMsg = "Warning: You have used 90% of your overall budget.";
       threshold = 90;
-    } else if (usagePercent >= 50) {
-      alertMsg = "You have used 50% of your budget.";
+    } else if (usagePercent >= 50 && usagePercent < 90) {
+      alertMsg = "You have used 50% of your overall budget.";
       threshold = 50;
     }
 
     if (alertMsg) {
       // Check if we already sent this specific milestone alert recently (to avoid spam)
-      // For now, just send it and store it or implement a more complex check
-      const newAlert = new Alert({
-        userId,
-        type: "milestone",
-        threshold,
-        message: alertMsg,
-        category: category
-      });
-      await newAlert.save();
+      const existingAlert = await Alert.findOne({ userId, type: "milestone", threshold });
+      
+      if (!existingAlert) {
+        const newAlert = new Alert({
+          userId,
+          type: "milestone",
+          threshold,
+          message: alertMsg,
+          category: 'total'
+        });
+        await newAlert.save();
 
-      // Send Email
-      if (user.email) {
-        await sendEmail(
-          user.email,
-          "Budget Alert",
-          alertMsg + ` Total Spent: ₹${totalSpentAfter} / ₹${totalBudget}`
-        );
+        // Send Email
+        if (user.email) {
+          await sendEmail(
+            user.email,
+            "Budget Alert",
+            alertMsg + ` Total Spent: ₹${totalSpentAfter} / ₹${totalBudget}`
+          );
+        }
       }
     }
 
