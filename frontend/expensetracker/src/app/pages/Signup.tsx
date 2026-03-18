@@ -248,13 +248,29 @@ export default function Signup() {
               </div>
 
               <div className="social-auth-buttons">
-                <button type="button" className="btn btn-social">
+                <button 
+                  type="button" 
+                  className="btn btn-social"
+                  onClick={() => {
+                    setLoading(true);
+                    window.location.href = "http://localhost:5000/auth/google";
+                  }}
+                  disabled={loading}
+                >
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M18.17 8.36H10v3.64h4.58c-.42 2.06-2.12 3.64-4.58 3.64-2.76 0-5-2.24-5-5s2.24-5 5-5c1.26 0 2.4.48 3.28 1.26l2.65-2.65C14.46 2.82 12.34 2 10 2 5.59 2 2 5.59 2 10s3.59 8 8 8c4.42 0 8-3.18 8-8 0-.54-.06-1.06-.17-1.64z" fill="#4285F4" />
                   </svg>
                   Google
                 </button>
-                <button type="button" className="btn btn-social">
+                <button 
+                  type="button" 
+                  className="btn btn-social"
+                  onClick={() => {
+                    setLoading(true);
+                    window.location.href = "http://localhost:5000/auth/github";
+                  }}
+                  disabled={loading}
+                >
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path d="M10 2c-4.4 0-8 3.6-8 8 0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0018 10c0-4.4-3.6-8-8-8z" fill="#000" />
                   </svg>
