@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   },
   lastName: {
     type: String,
-    required: true
+    default: ''
   },
   email: {
     type: String,
@@ -16,12 +16,23 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    default: null   // null for OAuth users
   },
   currency: {
     type: String,
-    required: true,
     default: 'INR'
+  },
+  provider: {
+    type: String,
+    default: 'local'  // 'local' | 'google' | 'github'
+  },
+  providerId: {
+    type: String,
+    default: null
+  },
+  picture: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

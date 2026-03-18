@@ -40,14 +40,20 @@
 
 const express = require("express");
 const dotenv = require("dotenv");
-const cors = require("cors");
+dotenv.config(); // Load variables first!
 
+const cors = require("cors");
+const session = require("express-session");
+const passport = require("passport");
+const path = require("path");
 const connectDB = require("../config/db");
 
-dotenv.config();
+// Load Passport Config
+require("../config/passport");
+
 connectDB();
+
 const nodemailer = require("nodemailer");
-require("dotenv").config();
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -55,6 +61,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
 const sendEmail = async (to, subject, text) => {
   try {
     await transporter.sendMail({
@@ -69,25 +76,36 @@ const sendEmail = async (to, subject, text) => {
   }
 };
 
-
-
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
+// Session Middleware (needed for passport)
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "smart_expense_session_secret",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Routes
 const authRoutes = require("../routes/authRoutes");
+const oauthRoutes = require("../routes/oauthRoutes"); // New OAuth routes
 const expenseRoutes = require("../routes/expenseRoutes");
 const budgetRoutes = require("../routes/budgetRoutes");
 const reportRoutes = require("../routes/reportRoutes");
 const alertRoutes = require("../routes/alertRoutes");
 const groupRoutes = require("../routes/groupRoutes");
 const receiptRoutes = require("../routes/receiptRoutes");
-const path = require("path");
-// const adminRoutes = require("../routes/adminRoutes");
 
 app.use("/api/auth", authRoutes);
+app.use("/auth", oauthRoutes); // Root level /auth for OAuth callbacks
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/reports", reportRoutes);
@@ -97,7 +115,6 @@ app.use("/api/receipts", receiptRoutes);
 
 // Static folder for uploads
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
 
 // Test route
 app.get("/", (req, res) => {
@@ -109,4 +126,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
 module.exports = { sendEmail };
