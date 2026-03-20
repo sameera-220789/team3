@@ -9,8 +9,18 @@ router.post("/", addExpense);
 // GET all expenses
 router.get("/", async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { userId, range } = req.query;
     const filter = userId ? { userId } : {};
+    
+    if (range) {
+      const days = parseInt(range, 10);
+      if (!isNaN(days)) {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        filter.date = { $gte: startDate };
+      }
+    }
+
     // Sort by descending date so recent transactions are fetched first
     const expenses = await Expense.find(filter).sort({ date: -1 });
     res.json(expenses);
@@ -27,7 +37,11 @@ router.put("/:id", async (req, res) => {
       {
         category: req.body.category,
         amount: req.body.amount,
-        description: req.body.description
+        description: req.body.description,
+        date: req.body.date,
+        paymentMethod: req.body.paymentMethod,
+        isRecurring: req.body.isRecurring,
+        receiptImagePath: req.body.receiptImagePath
       },
       { new: true }
     );

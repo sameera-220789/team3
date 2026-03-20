@@ -772,7 +772,7 @@ export default function Budget() {
                         const response = await fetch("http://localhost:5000/api/budgets", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
+                          body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue, month: selectedMonth })
                         });
 
                         if (response.ok) {
