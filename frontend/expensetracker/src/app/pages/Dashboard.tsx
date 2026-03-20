@@ -167,6 +167,8 @@ export function DashboardOverview() {
   const [loading, setLoading] = useState(true);
   const [editingTotalBudget, setEditingTotalBudget] = useState(false);
   const [newTotalBudgetValue, setNewTotalBudgetValue] = useState("");
+  const [chartRange, setChartRange] = useState("7");
+  const [chartExpenses, setChartExpenses] = useState<any[]>([]);
 
   const fetchDashboardData = async () => {
     try {
@@ -200,6 +202,23 @@ export function DashboardOverview() {
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const fetchChartData = async () => {
+      try {
+        const user = getUser();
+        if(!user) return;
+        const res = await fetch(`http://localhost:5000/api/expenses?userId=${user.id}&range=${chartRange}`, { cache: "no-store" as RequestCache });
+        if (res.ok) setChartExpenses(await res.json());
+      } catch (err) {
+        console.error("Error fetching chart data:", err);
+      }
+    };
+    
+    fetchChartData();
+    const interval = setInterval(fetchChartData, 30000);
+    return () => clearInterval(interval);
+  }, [chartRange]);
 
   const handleSaveTotalBudget = async () => {
     const numericValue = Number(newTotalBudgetValue.replace(/,/g, ""));
@@ -333,35 +352,46 @@ export function DashboardOverview() {
     props: getDonutProps(amt, cat)
   }));
 
-  // Dynamic Line Chart (Last 7 Days)
-  const last7DaysData = expenses.reduce((acc: number[], exp) => {
+  // Dynamic Line Chart (7 / 30 / 90 Days)
+  const days = parseInt(chartRange, 10);
+  const chartData = React.useMemo(() => {
+    const data = new Array(days).fill(0);
     const today = new Date();
-    const expDate = new Date(exp.date || exp.createdAt);
-    const diffTime = today.getTime() - expDate.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    if (diffDays >= 0 && diffDays <= 7) {
-      let dayIdx = expDate.getDay() - 1; // Mon=0, Sun=6
-      if (dayIdx === -1) dayIdx = 6;
-      acc[dayIdx] = (acc[dayIdx] || 0) + exp.amount;
-    }
-    return acc;
-  }, [0, 0, 0, 0, 0, 0, 0]);
+    today.setHours(23, 59, 59, 999);
+    
+    chartExpenses.forEach(exp => {
+      const expDate = new Date(exp.date || exp.createdAt);
+      const diffTime = today.getTime() - expDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= 0 && diffDays < days) {
+        const idx = days - 1 - diffDays;
+        data[idx] += exp.amount;
+      }
+    });
+    return data;
+  }, [chartExpenses, chartRange]);
 
-  const maxSpending = Math.max(...last7DaysData, 1);
+  const maxSpending = Math.max(...chartData, 1);
   const getPathData = (data: number[]) => {
+    if (data.length === 0) return { path: "", areaPath: "" };
+    if (data.length === 1) return { path: `M 0 ${200 - (data[0]/maxSpending)*150}`, areaPath: "" };
+    
     let path = "";
     let areaPath = "";
-    for (let i = 0; i < 7; i++) {
-       const x = i * 100;
+    const stepX = 600 / (data.length - 1);
+    
+    for (let i = 0; i < data.length; i++) {
+       const x = i * stepX;
        const y = 200 - (data[i] / maxSpending) * 150;
        if (i === 0) {
            path += `M 0 ${y}`;
            areaPath += `M 0 ${y}`;
        } else {
-           const prevX = (i - 1) * 100;
+           const prevX = (i - 1) * stepX;
            const prevY = 200 - (data[i - 1] / maxSpending) * 150;
-           const cp1X = prevX + 50;
-           const cp2X = x - 50;
+           const cp1X = prevX + stepX / 2;
+           const cp2X = x - stepX / 2;
            path += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
            areaPath += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
        }
@@ -370,7 +400,24 @@ export function DashboardOverview() {
     return { path, areaPath };
   };
 
-  const { path: linePath, areaPath } = getPathData(last7DaysData);
+  const { path: linePath, areaPath } = getPathData(chartData);
+
+  const chartLabels = React.useMemo(() => {
+    const labels = [];
+    const today = new Date();
+    const numLabels = 7;
+    for (let i = 0; i < numLabels; i++) {
+      const d = new Date(today);
+      const daysAgo = (days - 1) - Math.round(i * ((days - 1) / (numLabels - 1)));
+      d.setDate(today.getDate() - daysAgo);
+      if (days === 7) {
+        labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+      } else {
+        labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      }
+    }
+    return labels;
+  }, [chartRange]);
 
   if(loading) {
     return <div>Loading dashboard...</div>;
@@ -560,10 +607,10 @@ export function DashboardOverview() {
                   <h3 className="card-title">Spending Overview</h3>
                   <p className="card-subtitle">Monthly spending trend</p>
                 </div>
-                <select className="chart-filter">
-                  <option>Last 7 days</option>
-                  <option>Last 30 days</option>
-                  <option>Last 90 days</option>
+                <select className="chart-filter" value={chartRange} onChange={(e) => setChartRange(e.target.value)}>
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
                 </select>
               </div>
               <div className="chart-container">
@@ -584,9 +631,9 @@ export function DashboardOverview() {
                     strokeWidth="3"
                     fill="none" />
 
-                  {/* Data points */}
-                  {last7DaysData.map((amount, i) => (
-                    <circle key={i} cx={i * 100} cy={200 - (amount / maxSpending) * 150} r="5" fill="#6366f1" />
+                  {/* Data points (only show points if not too many) */}
+                  {chartData.length <= 31 && chartData.map((amount, i) => (
+                    <circle key={i} cx={i * (600/(chartData.length - 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
                   ))}
 
                   <defs>
@@ -601,13 +648,7 @@ export function DashboardOverview() {
                   </defs>
                 </svg>
                 <div className="chart-labels">
-                  <span>Mon</span>
-                  <span>Tue</span>
-                  <span>Wed</span>
-                  <span>Thu</span>
-                  <span>Fri</span>
-                  <span>Sat</span>
-                  <span>Sun</span>
+                  {chartLabels.map((lbl, idx) => <span key={idx}>{lbl}</span>)}
                 </div>
               </div>
             </div>

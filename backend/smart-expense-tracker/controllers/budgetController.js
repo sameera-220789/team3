@@ -3,8 +3,10 @@ const Budget = require("../models/Budget");
 // Get all budgets
 exports.getBudgets = async (req, res) => {
   try {
-    const { userId } = req.query;
-    const filter = userId ? { userId } : {};
+    const { userId, month } = req.query;
+    // Default to current month if not provided
+    const budgetMonth = month || new Date().toISOString().slice(0, 7);
+    const filter = userId ? { userId, month: budgetMonth } : { month: budgetMonth };
     const budgets = await Budget.find(filter);
 
     res.json(budgets);
@@ -17,7 +19,7 @@ exports.getBudgets = async (req, res) => {
 // Add or Update Budget
 exports.addBudget = async (req, res) => {
   try {
-    const { category, limit, userId } = req.body;
+    const { category, limit, userId, month } = req.body;
 
     const limitNum = Number(limit);
 
@@ -25,7 +27,8 @@ exports.addBudget = async (req, res) => {
       return res.status(400).json({ message: "Invalid limit amount" });
     }
 
-    const allBudgets = await Budget.find({ userId });
+    const budgetMonth = month || new Date().toISOString().slice(0, 7);
+    const allBudgets = await Budget.find({ userId, month: budgetMonth });
 
     // Check against total budget if category is not 'total'
     if (category !== 'total') {
@@ -57,7 +60,7 @@ exports.addBudget = async (req, res) => {
     }
 
     // check existing budget
-    let budget = await Budget.findOne({ category, userId });
+    let budget = await Budget.findOne({ category, userId, month: budgetMonth });
 
     if (budget) {
       // update existing
@@ -72,7 +75,8 @@ exports.addBudget = async (req, res) => {
       const newBudget = new Budget({
         userId,
         category,
-        limit
+        limit,
+        month: budgetMonth
       });
       await newBudget.save();
       return res.json({
@@ -110,4 +114,4 @@ exports.deleteBudget = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-};
+};

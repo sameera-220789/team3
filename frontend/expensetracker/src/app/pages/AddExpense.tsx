@@ -20,6 +20,7 @@ export default function AddExpense() {
   const [receiptImagePath, setReceiptImagePath] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
 
   const getCategoryEmoji = (cat: string) => {
     switch (cat) {
@@ -150,8 +151,13 @@ export default function AddExpense() {
         return;
       }
       
-      const response = await fetch("http://localhost:5000/api/expenses", {
-        method: "POST",
+      const method = editingExpenseId ? "PUT" : "POST";
+      const url = editingExpenseId 
+        ? `http://localhost:5000/api/expenses/${editingExpenseId}` 
+        : "http://localhost:5000/api/expenses";
+
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
@@ -166,20 +172,48 @@ export default function AddExpense() {
       });
 
       if (response.ok) {
-        alert("Expense added successfully!");
+        alert(`Expense ${editingExpenseId ? "updated" : "added"} successfully!`);
         setAmount("");
         setDescription("");
         setReceiptImagePath("");
+        setEditingExpenseId(null);
         await fetchRecentExpenses(); // Dynamic update without refresh
       } else {
         const errorData = await response.json();
-        alert(`Failed to add expense: ${errorData.message}`);
+        alert(`Failed to ${editingExpenseId ? "update" : "add"} expense: ${errorData.message}`);
       }
     } catch (error) {
       console.error("Error adding expense:", error);
       alert("Network error.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (exp: any) => {
+    setEditingExpenseId(exp._id);
+    setAmount(String(exp.amount));
+    setCategory(exp.category || "other");
+    setDate(new Date(exp.date || exp.createdAt).toISOString().split("T")[0]);
+    setPaymentMethod(exp.paymentMethod || "cash");
+    setDescription(exp.description || "");
+    setIsRecurring(!!exp.isRecurring);
+    setReceiptImagePath(exp.receiptImagePath || "");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this expense?")) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/expenses/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        await fetchRecentExpenses();
+      } else {
+        alert("Failed to delete expense");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting expense");
     }
   };
 
@@ -515,17 +549,28 @@ export default function AddExpense() {
                   </div>
 
                   <div className="form-actions">
-                    <button type="button" className="btn btn-outline btn-large">
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                      Save as Draft
-                    </button>
+                    {editingExpenseId ? (
+                      <button type="button" className="btn btn-outline btn-large" onClick={() => {
+                        setEditingExpenseId(null);
+                        setAmount("");
+                        setDescription("");
+                        setDate(new Date().toISOString().split("T")[0]);
+                      }}>
+                        Cancel Edit
+                      </button>
+                    ) : (
+                      <button type="button" className="btn btn-outline btn-large">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                          <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                        Save as Draft
+                      </button>
+                    )}
                     <button type="submit" className="btn btn-primary btn-large" disabled={loading}>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M16 10L7 10M7 10L11 6M7 10L11 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       </svg>
-                      {loading ? "Adding..." : "Add Expense"}
+                      {loading ? (editingExpenseId ? "Updating..." : "Adding...") : (editingExpenseId ? "Update Expense" : "Add Expense")}
                     </button>
                   </div>
                 </form>
@@ -645,7 +690,10 @@ export default function AddExpense() {
                           <p className="transaction-time">{new Date(exp.date || exp.createdAt).toLocaleDateString()}</p>
                         </div>
                         <span className="transaction-amount">{currentUser?.currency === 'USD' ? '$' : '₹'}{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-
+                        <div className="transaction-actions" style={{display: 'flex', gap: '8px', marginLeft: '8px'}}>
+                          <button onClick={() => handleEdit(exp)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)'}} title="Edit">✏️</button>
+                          <button onClick={() => handleDelete(exp._id)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)'}} title="Delete">🗑️</button>
+                        </div>
                       </div>
                     );
                   }) : (
