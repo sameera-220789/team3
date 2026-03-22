@@ -53,6 +53,11 @@ export default function Budget() {
   const [editingCategoryId, setEditingCategoryId] = useState<BudgetCategoryId | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  
+  // Selected Month (YYYY-MM)
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    new Date().toISOString().slice(0, 7)
+  );
 
   // Split Expense State
   const [groups, setGroups] = useState<any[]>([]);
@@ -74,7 +79,7 @@ export default function Budget() {
   useEffect(() => {
     fetchBudgetsData();
     fetchGroups();
-    // Auto-refresh every 30 seconds so Total Spent and Remaining update after adding expenses
+    // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchBudgetsData();
       if (activeTab === "split") {
@@ -83,7 +88,7 @@ export default function Budget() {
       }
     }, 30000);
     return () => clearInterval(interval);
-  }, [activeTab, activeGroupId]);
+  }, [activeTab, activeGroupId, selectedMonth]);
 
   const fetchGroups = async () => {
     try {
@@ -98,6 +103,53 @@ export default function Budget() {
       }
     } catch (e) {
       console.error("Error fetching groups:", e);
+    }
+  };
+
+  const finalizeMonth = async (option: 'carryForward' | 'savings') => {
+    try {
+      const user = getUser();
+      if (!user) return;
+
+      const response = await fetch("http://localhost:5000/api/budgets/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, month: selectedMonth, option })
+      });
+
+      if (response.ok) {
+        alert(option === 'carryForward' ? "Budget carried forward to next month!" : "Remaining budget moved to savings!");
+        fetchBudgetsData();
+      } else {
+        const data = await response.json();
+        alert(data.message || "Failed to finalize month");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error finalizing month");
+    }
+  };
+
+  const undoFinalize = async () => {
+    try {
+      const user = getUser();
+      if (!user) return;
+
+      const res = await fetch("http://localhost:5000/api/budgets/undo-finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, month: selectedMonth })
+      });
+
+      if (res.ok) {
+        alert("Finalization undone successfully!");
+        fetchBudgetsData(); // Refresh both budgets and expenses
+      } else {
+        const errorData = await res.json();
+        alert(errorData.message || "Failed to undo finalization");
+      }
+    } catch (e) {
+      console.error("Error undoing finalization:", e);
     }
   };
 
@@ -131,8 +183,8 @@ export default function Budget() {
 
       const fetchOpts = { cache: "no-store" as RequestCache };
       const [expenseRes, budgetRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
-        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts)
+        fetch(`http://localhost:5000/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
+        fetch(`http://localhost:5000/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts)
       ]);
 
       if (expenseRes.ok && budgetRes.ok) {
@@ -173,7 +225,9 @@ export default function Budget() {
   };
 
   const totalBudgetDoc = budgetsData.find((b: any) => b.category === 'total');
-  const overallTotalBudget = totalBudgetDoc ? totalBudgetDoc.limit : 0;
+  const overallTotalBudget = totalBudgetDoc ? (Number(totalBudgetDoc.totalBudget) || 0) : 0;
+  const overallSpentAmount = totalBudgetDoc ? (Number(totalBudgetDoc.spentAmount) || 0) : 0;
+  const overallRemainingAmount = totalBudgetDoc ? (Number(totalBudgetDoc.remainingAmount) || 0) : 0;
 
   // Total Spent = sum of ALL expenses (matches Dashboard)
   const totalSpent = allExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0);
@@ -183,11 +237,18 @@ export default function Budget() {
     .filter((b: any) => b.category !== 'total')
     .reduce((sum: number, b: any) => sum + b.limit, 0);
 
-  // Remaining = overall budget limit minus allocated category budgets (matches Dashboard)
-  const remaining = overallTotalBudget - totalCategoryBudget;
-  const isOverBudget = remaining < 0;
+  // Remaining unallocated budget = overall budget minus allocated category budgets
+  const unallocatedBudget = overallTotalBudget - totalCategoryBudget;
+  const isOverAllocated = unallocatedBudget < 0;
+  
   // Utilization based on actual spend vs overall budget
-  const overallUtilization = overallTotalBudget === 0 ? 0 : (totalSpent / overallTotalBudget) * 100;
+  const overallUtilization = overallTotalBudget === 0 ? 0 : (overallSpentAmount / overallTotalBudget) * 100;
+
+  const navigateMonth = (direction: number) => {
+    const date = new Date(`${selectedMonth}-01`);
+    date.setMonth(date.getMonth() + direction);
+    setSelectedMonth(date.toISOString().slice(0, 7));
+  };
 
   const startEditing = (category: BudgetCategory) => {
     setEditingCategoryId(category.id);
@@ -209,7 +270,7 @@ export default function Budget() {
       const response = await fetch("http://localhost:5000/api/budgets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
+        body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue, month: selectedMonth })
       });
 
       if (response.ok) {
@@ -243,7 +304,7 @@ export default function Budget() {
 
       if (!window.confirm("Are you sure you want to delete this budget category?")) return;
 
-      const response = await fetch(`http://localhost:5000/api/budgets/${categoryId}?userId=${user.id}`, {
+      const response = await fetch(`http://localhost:5000/api/budgets/${categoryId}?userId=${user.id}&month=${selectedMonth}`, {
         method: "DELETE"
       });
 
@@ -436,7 +497,12 @@ export default function Budget() {
             </svg>
             <span>Profile</span>
           </Link>
-          <button className="sidebar-link logout-btn">
+          <button className="sidebar-link logout-btn" onClick={() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            localStorage.removeItem("role");
+            window.location.href = "/login";
+          }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V15C17 15.5304 16.7893 16.0391 16.4142 16.4142C16.0391 16.7893 15.5304 17 15 17H13M7 13L3 10M3 10L7 7M3 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -451,7 +517,32 @@ export default function Budget() {
         <header className="budget-page-header">
           <div className="budget-header-left">
             <h1 className="budget-page-title">Budget Management</h1>
-            <p className="budget-page-subtitle">Set and track your monthly spending limits</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+              <button 
+                onClick={() => navigateMonth(-1)}
+                className="month-nav-btn"
+                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+              >
+                &lsaquo; Prev
+              </button>
+              <button 
+                onClick={() => setSelectedMonth(new Date().toISOString().slice(0, 7))}
+                className="month-nav-btn present-btn"
+                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+              >
+                Present
+              </button>
+              <p className="budget-page-subtitle" style={{ margin: 0, fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem', minWidth: '120px', textAlign: 'center' }}>
+                {new Date(`${selectedMonth}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </p>
+              <button 
+                onClick={() => navigateMonth(1)}
+                className="month-nav-btn"
+                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+              >
+                Next &rsaquo;
+              </button>
+            </div>
           </div>
           <div className="budget-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ThemeToggle />
@@ -493,14 +584,14 @@ export default function Budget() {
                     <div className="overview-icon">
                       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
                         <circle cx="16" cy="16" r="14" fill="var(--color-primary-light)" fillOpacity="0.1" />
-                        <path d="M16 10V22M20 14H14C13.4696 14 12.9609 14.2107 12.5858 14.5858C12.2107 14.9609 12 15.4696 12 16C12 16.5304 12.2107 17.0391 12.5858 17.4142C12.9609 17.7893 13.4696 18 14 18H18C18.5304 18 19.0391 18.2107 19.4142 18.5858C19.7893 18.9609 20 19.4696 20 20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H12" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" />
+                        <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fontSize="18" fontWeight="bold" fill="var(--color-primary)">₹</text>
                       </svg>
                     </div>
                     <h3 className="overview-title">Overall Budget</h3>
                   </div>
                   <p className="overview-amount">₹{formatCurrency(overallTotalBudget)}</p>
                   <div className="overview-footer">
-                    <span className="overview-label">For March 2026</span>
+                    <span className="overview-label">Set for {new Date(`${selectedMonth}-01`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                   </div>
                 </div>
 
@@ -516,7 +607,7 @@ export default function Budget() {
                     <h3 className="overview-title">Total Spent</h3>
                   </div>
                   <p className="overview-amount danger">
-                    ₹{formatCurrency(totalSpent)}
+                    ₹{formatCurrency(overallSpentAmount)}
                   </p>
                   <div className="overview-footer">
                     <div className="progress-mini">
@@ -535,8 +626,8 @@ export default function Budget() {
                   <div className="overview-header">
                     <div className="overview-icon">
                       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="14" fill={isOverBudget ? 'var(--color-danger-light)' : 'var(--color-success-light)'} fillOpacity="0.2" />
-                        {isOverBudget ? (
+                        <circle cx="16" cy="16" r="14" fill={isOverAllocated ? 'var(--color-danger-light)' : 'var(--color-success-light)'} fillOpacity="0.2" />
+                        {isOverAllocated ? (
                           <path d="M11 11L21 21M21 11L11 21" stroke="var(--color-danger)" strokeWidth="2.5" strokeLinecap="round" />
                         ) : (
                           <path d="M12 16L15 19L21 13" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -545,19 +636,57 @@ export default function Budget() {
                     </div>
                     <h3 className="overview-title">Unallocated Budget</h3>
                   </div>
-                  <p className="overview-amount" style={{ color: isOverBudget ? 'var(--color-danger)' : 'var(--color-success)' }}>
-                    {isOverBudget ? '-' : ''}₹{formatCurrency(Math.abs(remaining))}
+                  <p className="overview-amount" style={{ color: isOverAllocated ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                    {isOverAllocated ? '-' : ''}₹{formatCurrency(Math.abs(unallocatedBudget))}
                   </p>
-                  <div className="overview-footer">
-                    {isOverBudget ? (
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-danger)', background: 'var(--color-danger-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px' }}>
-                        ⚠️ Over Allocated by ₹{formatCurrency(Math.abs(remaining))}
+                  <div className="overview-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {isOverAllocated ? (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-danger)', background: 'var(--color-danger-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px', width: 'fit-content' }}>
+                        ⚠️ Over Allocated by ₹{formatCurrency(Math.abs(unallocatedBudget))}
                       </span>
                     ) : (
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px', width: 'fit-content' }}>
                         ✓ Within Budget
                       </span>
                     )}
+                    
+                    {overallRemainingAmount > 0 && totalBudgetDoc && !totalBudgetDoc.carryForward && totalBudgetDoc.savings === 0 && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button 
+                          onClick={() => finalizeMonth('carryForward')}
+                          style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          Carry Forward
+                        </button>
+                        <button 
+                          onClick={() => finalizeMonth('savings')}
+                          style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'var(--color-success)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          To Savings
+                        </button>
+                      </div>
+                    )}
+                    {totalBudgetDoc?.carryForward && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600 }}>Will carry forward to next month</span>
+                    )}
+                    {totalBudgetDoc?.savings > 0 && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--color-success)', fontWeight: 600 }}>₹{formatCurrency(totalBudgetDoc.savings)} moved to savings</span>
+                    )}
+
+                {(totalBudgetDoc && (totalBudgetDoc.carryForward || (totalBudgetDoc.savings > 0))) && (
+                  <div style={{ marginTop: '14px' }}>
+                    <button 
+                      className="btn btn-secondary btn-small"
+                      style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger-light)' }}
+                      onClick={undoFinalize}
+                    >
+                      Undo Finalization
+                    </button>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-500)', marginTop: '4px' }}>
+                      {totalBudgetDoc.carryForward ? "Status: Carried Forward" : `Status: Saved ₹${formatCurrency(totalBudgetDoc.savings)}`}
+                    </p>
+                  </div>
+                )}
                   </div>
                 </div>
               </div>
@@ -772,7 +901,7 @@ export default function Budget() {
                         const response = await fetch("http://localhost:5000/api/budgets", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue })
+                          body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue, month: selectedMonth })
                         });
 
                         if (response.ok) {

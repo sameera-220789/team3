@@ -63,10 +63,31 @@ const budgetSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  totalBudget: {
+    type: Number,
+    required: true,
+    default: function() { return this.limit; }
+  },
+  spentAmount: {
+    type: Number,
+    default: 0
+  },
+  remainingAmount: {
+    type: Number,
+    default: function() { return this.totalBudget; }
+  },
   month: {
     type: String,
     required: true
+  },
+  carryForward: {
+    type: Boolean,
+    default: false
+  },
+  savings: {
+    type: Number,
+    default: 0
   }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Budget", budgetSchema);

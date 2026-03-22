@@ -112,7 +112,7 @@ export default function Dashboard() {
             </svg>
             <span>Profile</span>
           </Link>
-          <button className="sidebar-link logout-btn" onClick={() => { localStorage.clear(); navigate('/login'); }}>
+          <button className="sidebar-link logout-btn" onClick={() => { localStorage.clear(); window.location.href = "/login"; }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V15C17 15.5304 16.7893 16.0391 16.4142 16.4142C16.0391 16.7893 15.5304 17 15 17H13M7 13L3 10M3 10L7 7M3 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
@@ -169,6 +169,8 @@ export function DashboardOverview() {
   const [newTotalBudgetValue, setNewTotalBudgetValue] = useState("");
   const [chartRange, setChartRange] = useState("7");
   const [chartExpenses, setChartExpenses] = useState<any[]>([]);
+  const [insights, setInsights] = useState<any[]>([]);
+  const [totalSavings, setTotalSavings] = useState(0);
 
   const fetchDashboardData = async () => {
     try {
@@ -188,6 +190,20 @@ export function DashboardOverview() {
         setExpenses(expenseData);
         setBudgets(budgetData);
         setAlerts(alertData);
+
+        // Fetch user total savings
+        const userRes = await fetch(`http://localhost:5000/api/auth/profile?userId=${user.id}`);
+        if (userRes.ok) {
+           const userData = await userRes.json();
+           setTotalSavings(userData.totalSavings || 0);
+        }
+
+        // Fetch Spending Insights
+        const insightsRes = await fetch(`http://localhost:5000/api/reports/spending-insights?userId=${user.id}`);
+        if (insightsRes.ok) {
+          const insightsData = await insightsRes.json();
+          setInsights(insightsData);
+        }
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -582,6 +598,22 @@ export function DashboardOverview() {
               <div className="stat-header">
                 <div className="stat-icon-wrapper green">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 1L12 23M17 5H12.5C11.6716 5 11 5.67157 11 6.5C11 7.32843 11.6716 8 12.5 8H14.5C15.3284 8 16 8.67157 16 9.5C16 10.3284 15.3284 11 14.5 11H11.5C10.6716 11 10 10.3284 10 9.5V8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <rect x="2" y="2" width="20" height="20" rx="10" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </div>
+                <span className="stat-label">Total Savings</span>
+              </div>
+              <p className="stat-value">₹{totalSavings.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+              <div className="stat-footer">
+                <span className="stat-period">Accumulated leftover budget</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <div className="stat-icon-wrapper green">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M19 9L12 3L5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     <rect x="5" y="9" width="14" height="12" rx="1" stroke="currentColor" strokeWidth="2" />
@@ -701,70 +733,94 @@ export function DashboardOverview() {
           </div>
 
           {/* Recent Transactions & Budget Alerts */}
-          <div className="dashboard-grid-3">
-            <div className="card col-span-2">
-              <div className="card-header-section">
-                <h3 className="card-title">Recent Transactions</h3>
-                <Link to="/dashboard/transactions" className="view-all-link">View all</Link>
-              </div>
-              <div className="transactions-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th>Category</th>
-                      <th>Date</th>
-                      <th>Payment</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expenses.length > 0 ? expenses.slice(0, 5).map((exp) => (
-                      <tr key={exp._id}>
-                        <td>
-                          <div className="transaction-desc">
-                            <span className="transaction-emoji">{getEmoji(exp.category)}</span>
-                            <span>{exp.description || 'No Description'}</span>
-                          </div>
-                        </td>
-                        <td><span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span></td>
-                        <td>{new Date(exp.date || exp.createdAt).toLocaleDateString()}</td>
-                        <td>{exp.paymentMethod || 'Cash'}</td>
-                        <td className="amount">₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-header-section">
-                <h3 className="card-title">Budget Alerts</h3>
-              </div>
-              <div className="alerts-list">
-                {alerts.length > 0 ? alerts.slice(0, 8).map((alert) => (
-                  <div key={alert._id} className={`alert-item ${alert.threshold === 100 || alert.type === 'limit_reached' ? 'danger' : 'warning'}`}>
-                    <div className={`alert-icon-circle ${alert.threshold === 100 || alert.type === 'limit_reached' ? 'danger' : 'warning'}`}>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                    <div className="alert-content-small">
-                      <p className="alert-title-small">{alert.message}</p>
-                      <p className="alert-text-small">{new Date(alert.createdAt).toLocaleString()}</p>
-                    </div>
-                  </div>
-                )) : (
-                  <div style={{textAlign: "center", padding: "1rem", color: "#6B7280"}}>No recent budget alerts.</div>
-                )}
-
-              </div>
-            </div>
+      {/* Highlights: Insights & Alerts Side by Side */}
+      <div className="dashboard-grid">
+        <div className="card">
+          <div className="card-header-section">
+            <h3 className="card-title">Spending Insights</h3>
           </div>
+          <div className="insights-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {insights.length > 0 ? (
+              insights.slice(0, 5).map((insight, idx) => (
+                <div key={idx} className={`insight-item ${insight.type}`} style={{ 
+                  padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--color-gray-200)', 
+                  background: 'var(--color-gray-50)', position: 'relative', overflow: 'hidden'
+                }}>
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: insight.type === 'warning' ? '#ef4444' : '#6366f1' }}></div>
+                  <p style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-gray-900)' }}>{insight.message}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-gray-600)', marginTop: '4px' }}>{insight.suggestion}</p>
+                </div>
+              ))
+            ) : (
+              <div style={{textAlign: "center", padding: "1rem", color: "#6B7280"}}>Calculating insights...</div>
+            )}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header-section">
+            <h3 className="card-title">Budget Alerts</h3>
+          </div>
+          <div className="alerts-list">
+            {alerts.length > 0 ? alerts.slice(0, 5).map((alert) => (
+              <div key={alert._id} className={`alert-item ${alert.threshold === 100 || alert.type === 'limit_reached' ? 'danger' : 'warning'}`}>
+                <div className={`alert-icon-circle ${alert.threshold === 100 || alert.type === 'limit_reached' ? 'danger' : 'warning'}`}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div className="alert-content-small">
+                  <p className="alert-title-small">{alert.message}</p>
+                  <p className="alert-text-small">{new Date(alert.createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+            )) : (
+              <div style={{textAlign: "center", padding: "1rem", color: "#6B7280"}}>No recent budget alerts.</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ height: '1.5rem' }}></div>
+
+      {/* Recent Transactions Section */}
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div className="card-header-section">
+          <h3 className="card-title">Recent Transactions</h3>
+          <Link to="/dashboard/transactions" className="view-all-link">View all</Link>
+        </div>
+        <div className="transactions-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Payment</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.length > 0 ? expenses.slice(0, 3).map((exp) => (
+                <tr key={exp._id}>
+                  <td>
+                    <div className="transaction-desc">
+                      <span className="transaction-emoji">{getEmoji(exp.category)}</span>
+                      <span>{exp.description || 'No Description'}</span>
+                    </div>
+                  </td>
+                  <td><span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span></td>
+                  <td>{new Date(exp.date || exp.createdAt).toLocaleDateString()}</td>
+                  <td>{exp.paymentMethod || 'Cash'}</td>
+                  <td className="amount">₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                </tr>
+              )) : (
+                <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </>
   );
 }

@@ -157,6 +157,7 @@ exports.getProfile = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       currency: user.currency,
+      totalSavings: user.totalSavings || 0,
       memberSince: user.createdAt
     });
   } catch (error) {
