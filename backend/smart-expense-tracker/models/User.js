@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
   picture: {
     type: String,
     default: null
+  },
+  totalSavings: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 

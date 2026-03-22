@@ -1,11 +1,13 @@
 import { useMemo, useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
 import ReceiptUploader from "../components/ReceiptUploader";
 
 export default function AddExpense() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const expenseIdFromUrl = searchParams.get("id");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("other");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -124,9 +126,18 @@ export default function AddExpense() {
         fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
       ]);
       
-      if (expRes.ok) setRecentExpenses(await expRes.json());
+      const expenses = expRes.ok ? await expRes.json() : [];
+      if (expRes.ok) setRecentExpenses(expenses);
       if (budRes.ok) setBudgets(await budRes.json());
       if (alertRes.ok) setAlerts(await alertRes.json());
+
+      // If there's an expenseIdFromUrl, find it and load it
+      if (expenseIdFromUrl) {
+         const toEdit = expenses.find((e: any) => e._id === expenseIdFromUrl);
+         if (toEdit) {
+            handleEdit(toEdit);
+         }
+      }
       
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -138,7 +149,7 @@ export default function AddExpense() {
     const user = getUser();
     setCurrentUser(user);
     fetchRecentExpenses();
-  }, []);
+  }, [expenseIdFromUrl]);
   
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,7 +290,12 @@ export default function AddExpense() {
             </svg>
             <span>Profile</span>
           </Link>
-          <button className="sidebar-link logout-btn" onClick={() => { localStorage.clear(); navigate('/login'); }}>
+          <button className="sidebar-link logout-btn" onClick={() => { 
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            localStorage.removeItem("role");
+            window.location.href = "/login";
+          }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V15C17 15.5304 16.7893 16.0391 16.4142 16.4142C16.0391 16.7893 15.5304 17 15 17H13M7 13L3 10M3 10L7 7M3 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>

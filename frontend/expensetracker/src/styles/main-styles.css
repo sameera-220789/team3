@@ -3526,3 +3526,118 @@ h1, h2, h3, h4, h5, h6 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   20. Month Navigation Styles
+   ========================================================================== */
+.month-nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  background: var(--color-gray-50);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-gray-200);
+  transition: all var(--transition-base);
+}
+
+.month-nav-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.month-nav-label {
+  font-size: 0.875rem;
+  color: var(--color-gray-500);
+  font-weight: var(--font-weight-medium);
+}
+
+.month-nav-value {
+  font-size: 1.125rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+}
+
+.month-nav-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.month-nav-btn {
+  padding: 0.5rem 1rem;
+  background: white;
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-fast);
+}
+
+.month-nav-btn:hover {
+  background: var(--color-gray-100);
+  border-color: var(--color-gray-300);
+  transform: translateY(-1px);
+}
+
+.month-nav-btn:active {
+  transform: translateY(0);
+}
+
+.month-nav-btn.present-btn {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Dark Mode Navigation Fixes */
+.dark .month-nav-container {
+  background-color: var(--color-gray-100) !important;
+  border-color: var(--color-gray-300) !important;
+}
+
+.dark .month-nav-btn {
+  background-color: var(--color-gray-200) !important;
+  color: var(--color-gray-800) !important;
+  border-color: var(--color-gray-300) !important;
+}
+
+.dark .month-nav-btn:hover {
+  background-color: var(--color-gray-300) !important;
+  border-color: var(--color-gray-400) !important;
+}
+
+.dark .month-nav-btn.present-btn {
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary-light) !important;
+}
+
+.dark .month-nav-btn.present-btn:hover {
+  background: #4f46e5;
+  color: white !important;
+}
+
+.insight-card.warning {
+  border-left: 4px solid #ef4444 !important;
+}
+.insight-card.success {
+  border-left: 4px solid #22c55e !important;
+}
+.insight-card.info {
+  border-left: 4px solid #6366f1 !important;
+}
+
+[data-theme='dark'] .insight-card {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+[data-theme='dark'] .insight-card .insight-icon {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+[data-theme='dark'] .insight-card p {
+  color: #f8fafc !important;
+}
+[data-theme='dark'] .insight-card p:last-child {
+  color: #94a3b8 !important;
+}
