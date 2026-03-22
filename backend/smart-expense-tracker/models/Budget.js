@@ -62,6 +62,10 @@ const budgetSchema = new mongoose.Schema({
   limit: {
     type: Number,
     required: true
+  },
+  month: {
+    type: String,
+    required: true
   }
 });
 
