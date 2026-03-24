@@ -104,6 +104,7 @@ const alertRoutes = require("../routes/alertRoutes");
 const groupRoutes = require("../routes/groupRoutes");
 const receiptRoutes = require("../routes/receiptRoutes");
 const goalRoutes = require("../routes/goalRoutes");
+const paymentRoutes = require("../routes/paymentRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/auth", oauthRoutes); // Root level /auth for OAuth callbacks
@@ -114,6 +115,7 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/goals", goalRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Static folder for uploads
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

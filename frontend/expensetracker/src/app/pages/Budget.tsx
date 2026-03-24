@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../utils/config";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -198,8 +198,8 @@ export default function Budget() {
 
         // Calculate spending per category
         const spentByCategory: Record<string, number> = {};
-        expenses.forEach((exp: any) => {
-          spentByCategory[exp.category] = (spentByCategory[exp.category] || 0) + exp.amount;
+        expenses.filter((exp: any) => exp.type !== 'income').forEach((exp: any) => {
+          spentByCategory[exp.category] = (spentByCategory[exp.category] || 0) + Number(exp.amount);
         });
 
         // Merge with defined budgets
@@ -232,15 +232,15 @@ export default function Budget() {
   const overallRemainingAmount = totalBudgetDoc ? (Number(totalBudgetDoc.remainingAmount) || 0) : 0;
 
   // Total Spent = sum of ALL expenses (matches Dashboard)
-  const totalSpent = allExpenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0);
+  const totalSpent = allExpenses.filter((exp: any) => exp.type !== 'income').reduce((sum: number, exp: any) => sum + Number(exp.amount), 0);
 
   // Total category budget allocated (sum of non-total budget limits)
   const totalCategoryBudget = budgetsData
     .filter((b: any) => b.category !== 'total')
     .reduce((sum: number, b: any) => sum + b.limit, 0);
 
-  // Remaining unallocated budget = overall budget minus allocated category budgets
-  const unallocatedBudget = overallTotalBudget - totalCategoryBudget;
+  // Remaining unallocated budget = overall budget minus actual spend
+  const unallocatedBudget = overallTotalBudget - totalSpent;
   const isOverAllocated = unallocatedBudget < 0;
   
   // Utilization based on actual spend vs overall budget
@@ -480,6 +480,18 @@ export default function Budget() {
             </svg>
             <span>Dashboard</span>
           </Link>
+          <NavLink
+            to="/dashboard/make-payment"
+            className={({ isActive }) =>
+              `sidebar-link${isActive ? " active" : ""}`
+            }
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+            <span>Make Payment</span>
+          </NavLink>
           <Link to="/add-expense" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -638,7 +650,7 @@ export default function Budget() {
                         )}
                       </svg>
                     </div>
-                    <h3 className="overview-title">Unallocated Budget</h3>
+                    <h3 className="overview-title">Unallocated Balance</h3>
                   </div>
                   <p className="overview-amount" style={{ color: isOverAllocated ? 'var(--color-danger)' : 'var(--color-success)' }}>
                     {isOverAllocated ? '-' : ''}₹{formatCurrency(Math.abs(unallocatedBudget))}

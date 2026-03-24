@@ -112,8 +112,8 @@ exports.getSpendingInsights = async (req, res) => {
     const insights = [];
 
     // 1. Overall Monthly Trend
-    const thisMonthTotal = thisMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const lastMonthTotal = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const thisMonthTotal = thisMonthExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
+    const lastMonthTotal = lastMonthExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
 
     if (lastMonthTotal > 0) {
       const monthDiff = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
@@ -135,7 +135,7 @@ exports.getSpendingInsights = async (req, res) => {
     // 2. Category-wise Analysis (Monthly)
     const getCatTotals = (exps) => {
       const totals = {};
-      exps.forEach(e => {
+      exps.filter(e => e.type !== 'income').forEach(e => {
         const cat = (e.category || 'Other').toLowerCase(); // Consolidation
         totals[cat] = (totals[cat] || 0) + e.amount;
       });
@@ -162,8 +162,8 @@ exports.getSpendingInsights = async (req, res) => {
     });
 
     // 3. Weekly Trend & Category Spikes
-    const thisWeekTotal = thisWeekExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const lastWeekTotal = lastWeekExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const thisWeekTotal = thisWeekExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
+    const lastWeekTotal = lastWeekExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
 
     // General weekly trend
     if (lastWeekTotal > 0) {
@@ -222,12 +222,14 @@ exports.getMonthlyReport = async (req, res) => {
       date: { $gte: startDate, $lt: endDate }
     }).sort({ date: -1 });
 
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = expenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
+    const totalIncome = expenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
 
     const categoryBreakdown = {};
     const dailySummary = {};
 
     expenses.forEach(e => {
+        if (e.type === 'income') return;
         const cat = e.category || "Other";
         categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + e.amount;
 
@@ -244,6 +246,7 @@ exports.getMonthlyReport = async (req, res) => {
     res.json({
       month,
       totalExpenses,
+      totalIncome,
       totalBudget: totalBudgetLimit,
       remainingBudget,
       categoryBreakdown,
@@ -334,6 +337,7 @@ exports.downloadCSV = async (req, res) => {
 
     const fields = [
         { label: 'Date', value: (row) => new Date(row.date).toISOString().split('T')[0] },
+        { label: 'Type', value: (row) => row.type || 'expense' },
         { label: 'Description', value: 'description' },
         { label: 'Category', value: 'category' },
         { label: 'Amount', value: 'amount' }

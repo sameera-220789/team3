@@ -8,6 +8,49 @@ import {
 } from 'recharts';
 import { API_BASE_URL } from "../utils/config";
 
+// Color palette for dynamic categories
+const categoryColors: Record<string, string> = {
+  food: '#6366F1',
+  shopping: '#8B5CF6',
+  travel: '#EC4899',
+  bills: '#F59E0B',
+  entertainment: '#10B981',
+  healthcare: '#3B82F6',
+  education: '#F97316',
+  others: '#94A3B8'
+};
+
+const getCategoryColor = (cat: string, idx: number) => {
+  const fallbacks = ['#6366F1','#8B5CF6','#EC4899','#F59E0B','#10B981','#3B82F6','#F97316','#94A3B8'];
+  return categoryColors[cat] || fallbacks[idx % fallbacks.length];
+};
+
+const getEmoji = (category: string) => {
+  switch (category?.toLowerCase()) {
+    case 'food': return '🍔';
+    case 'travel': return '🚕';
+    case 'shopping': return '🛍️';
+    case 'bills': return '📄';
+    case 'entertainment': return '🎬';
+    case 'healthcare': return '🏥';
+    case 'education': return '📚';
+    case 'income': return '💰';
+    case 'salary': return '💵';
+    default: return '💼';
+  }
+};
+
+const getCategoryTheme = (category: string) => {
+  switch(category?.toLowerCase()) {
+    case 'food': return 'food';
+    case 'travel': return 'travel';
+    case 'shopping': return 'shopping';
+    case 'bills': return 'bills';
+    case 'entertainment': return 'entertainment';
+    default: return 'other';
+  }
+};
+
 export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -89,6 +132,18 @@ export default function Dashboard() {
               <path d="M3 7L10 3L17 7V17C17 17.5304 16.7893 18.0391 16.4142 18.4142C16.0391 18.7893 15.5304 19 15 19H5C4.46957 19 3.96086 18.7893 3.58579 18.4142C3.21071 18.0391 3 17.5304 3 17V7Z" stroke="currentColor" strokeWidth="1.5" />
             </svg>
             <span>Dashboard</span>
+          </NavLink>
+          <NavLink
+            to="/dashboard/make-payment"
+            className={({ isActive }) =>
+              `sidebar-link${isActive ? " active" : ""}`
+            }
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+            <span>Make Payment</span>
           </NavLink>
           <Link to="/add-expense" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -261,6 +316,17 @@ export function DashboardOverview() {
   const [insights, setInsights] = useState<any[]>([]);
   const [totalSavings, setTotalSavings] = useState(0);
 
+  const totalExpenses = expenses.filter(e => e.type !== 'income').reduce((sum, exp) => sum + exp.amount, 0);
+  const totalBudgetDoc = budgets.find(b => b.category === 'total');
+  const totalBudgetLimit = totalBudgetDoc ? totalBudgetDoc.limit : 0;
+  const totalCategoryBudget = budgets.filter(b => b.category !== 'total').reduce((sum, b) => sum + b.limit, 0);
+
+  // Remaining Budget = Overall Total Budget - Total Spent
+  const remainingBudget = totalBudgetLimit - totalExpenses;
+  const unallocatedBudget = totalBudgetLimit - totalCategoryBudget;
+  const utilizationPercent = totalBudgetLimit === 0 ? 0 : Math.min(100, (totalCategoryBudget / totalBudgetLimit) * 100);
+  const isOverBudget = remainingBudget < 0;
+
   const fetchDashboardData = async () => {
     try {
       const user = getUser();
@@ -354,64 +420,18 @@ export function DashboardOverview() {
     }
   };
 
-  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  
-  const totalBudgetDoc = budgets.find(b => b.category === 'total');
-  const totalBudgetLimit = totalBudgetDoc ? totalBudgetDoc.limit : 0;
-  
-  const totalCategoryBudget = budgets.filter(b => b.category !== 'total').reduce((sum, b) => sum + b.limit, 0);
-  
-  // Do NOT clamp to 0 — show real value so over-budget is visible
-  const remainingBudget = totalBudgetLimit - totalCategoryBudget;
-  const utilizationPercent = totalBudgetLimit === 0 ? 0 : Math.min(100, (totalCategoryBudget/totalBudgetLimit)*100);
-  const isOverBudget = remainingBudget < 0;
 
-  const getEmoji = (category: string) => {
-    switch (category) {
-      case 'food': return '🍔';
-      case 'travel': return '🚕';
-      case 'shopping': return '🛍️';
-      case 'bills': return '📄';
-      case 'entertainment': return '🎬';
-      case 'healthcare': return '🏥';
-      case 'education': return '📚';
-      default: return '💼';
-    }
-  };
 
-  const getCategoryTheme = (category: string) => {
-    switch(category) {
-      case 'food': return 'food';
-      case 'travel': return 'travel';
-      case 'shopping': return 'shopping';
-      case 'bills': return 'bills';
-      case 'entertainment': return 'entertainment';
-      default: return 'other';
-    }
-  };
+
 
   // Dynamically compute totals per unique category from actual expense data
-  const categoryTotals: Record<string, number> = expenses.reduce((acc: Record<string, number>, exp) => {
+  const categoryTotals: Record<string, number> = expenses.filter(e => e.type !== 'income').reduce((acc: Record<string, number>, exp) => {
     const cat = exp.category ? exp.category.toLowerCase() : 'others';
     acc[cat] = (acc[cat] || 0) + Number(exp.amount);
     return acc;
   }, {});
 
-  // Color palette for dynamic categories
-  const categoryColors: Record<string, string> = {
-    food: '#6366F1',
-    shopping: '#8B5CF6',
-    travel: '#EC4899',
-    bills: '#F59E0B',
-    entertainment: '#10B981',
-    healthcare: '#3B82F6',
-    education: '#F97316',
-    others: '#94A3B8'
-  };
-  const getCategoryColor = (cat: string, idx: number) => {
-    const fallbacks = ['#6366F1','#8B5CF6','#EC4899','#F59E0B','#10B981','#3B82F6','#F97316','#94A3B8'];
-    return categoryColors[cat] || fallbacks[idx % fallbacks.length];
-  };
+
 
   // Only include categories that have expenses > 0
   const activeCategories = Object.entries(categoryTotals).filter(([, amt]) => amt > 0);
@@ -464,7 +484,7 @@ export function DashboardOverview() {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     
-    chartExpenses.forEach(exp => {
+    chartExpenses.filter(e => e.type !== 'income').forEach(exp => {
       const expDate = new Date(exp.date || exp.createdAt);
       const diffTime = today.getTime() - expDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -661,7 +681,7 @@ export function DashboardOverview() {
               </p>
 
               <div className="stat-footer">
-                <span className="stat-period">Unallocated funds</span>
+                <span className="stat-period">Available to spend</span>
               </div>
             </div>
 
@@ -714,7 +734,7 @@ export function DashboardOverview() {
               <p className="stat-value">₹{totalCategoryBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
 
               <div className="stat-footer">
-                <span className="stat-period">Total of category limits</span>
+                <span className="stat-period">₹{unallocatedBudget.toLocaleString('en-IN')} unallocated</span>
               </div>
             </div>
       </div>
@@ -890,18 +910,23 @@ export function DashboardOverview() {
               </tr>
             </thead>
             <tbody>
-              {expenses.length > 0 ? expenses.slice(0, 3).map((exp) => (
+              {expenses.length > 0 ? expenses.slice(0, 5).map((exp) => (
                 <tr key={exp._id}>
                   <td>
                     <div className="transaction-desc">
                       <span className="transaction-emoji">{getEmoji(exp.category)}</span>
-                      <span>{exp.description || 'No Description'}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span>{exp.description || 'No Description'}</span>
+                        {exp.type === 'income' && <span style={{fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold'}}>INCOME</span>}
+                      </div>
                     </div>
                   </td>
                   <td><span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span></td>
                   <td>{new Date(exp.date || exp.createdAt).toLocaleDateString()}</td>
                   <td>{exp.paymentMethod || 'Cash'}</td>
-                  <td className="amount">₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                  <td className="amount" style={{ color: exp.type === 'income' ? 'var(--color-success)' : 'inherit' }}>
+                    {exp.type === 'income' ? '+' : ''}₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                  </td>
                 </tr>
               )) : (
                 <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
@@ -937,30 +962,6 @@ export function DashboardTransactions() {
     fetchExpenses();
   }, []);
 
-  const getEmoji = (category: string) => {
-    switch (category) {
-      case 'food': return '🍔';
-      case 'travel': return '🚕';
-      case 'shopping': return '🛍️';
-      case 'bills': return '📄';
-      case 'entertainment': return '🎬';
-      case 'healthcare': return '🏥';
-      case 'education': return '📚';
-      default: return '💼';
-    }
-  };
-
-  const getCategoryTheme = (category: string) => {
-    switch(category) {
-      case 'food': return 'food';
-      case 'travel': return 'travel';
-      case 'shopping': return 'shopping';
-      case 'bills': return 'bills';
-      case 'entertainment': return 'entertainment';
-      default: return 'other';
-    }
-  };
-
   if (loading) {
     return <div>Loading transactions...</div>;
   }
@@ -988,7 +989,10 @@ export function DashboardTransactions() {
                   <td>
                     <div className="transaction-desc">
                       <span className="transaction-emoji">{getEmoji(exp.category)}</span>
-                      <span>{exp.description || 'No Description'}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span>{exp.description || 'No Description'}</span>
+                        {exp.type === 'income' && <span style={{fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold'}}>INCOME</span>}
+                      </div>
                     </div>
                   </td>
                   <td>
@@ -996,7 +1000,9 @@ export function DashboardTransactions() {
                   </td>
                   <td>{new Date(exp.date || exp.createdAt).toLocaleDateString()}</td>
                   <td>{exp.paymentMethod || 'Cash'}</td>
-                  <td className="amount">₹{exp.amount}</td>
+                  <td className="amount" style={{ color: exp.type === 'income' ? 'var(--color-success)' : 'inherit' }}>
+                    {exp.type === 'income' ? '+' : ''}₹{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                  </td>
                 </tr>
               )) : (
                 <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
@@ -1079,6 +1085,16 @@ export function DashboardReports() {
           </div>
           <p className="stat-value" style={{ color: reportData.remainingBudget < 0 ? '#ef4444' : '#10b981' }}>₹{reportData.remainingBudget.toLocaleString('en-IN')}</p>
         </div>
+
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper green">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" /><path d="M12 6V18M12 6L8 10M12 6L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+            <span className="stat-label">Total Income</span>
+          </div>
+          <p className="stat-value" style={{ color: 'var(--color-success)' }}>₹{(reportData.totalIncome || 0).toLocaleString('en-IN')}</p>
+        </div>
       </div>
 
       <div className="dashboard-grid">
@@ -1140,9 +1156,16 @@ export function DashboardReports() {
               {reportData.expenses.map((exp: any) => (
                 <tr key={exp._id}>
                   <td>{new Date(exp.date).toLocaleDateString()}</td>
-                  <td>{exp.description || 'N/A'}</td>
-                  <td><span className={`category-badge other`}>{exp.category}</span></td>
-                  <td className="amount">₹{exp.amount.toLocaleString('en-IN')}</td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                       <span>{exp.description || 'N/A'}</span>
+                       {exp.type === 'income' && <span style={{fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold'}}>INCOME</span>}
+                    </div>
+                  </td>
+                  <td><span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span></td>
+                  <td className="amount" style={{ color: exp.type === 'income' ? 'var(--color-success)' : 'inherit' }}>
+                    {exp.type === 'income' ? '+' : ''}₹{exp.amount.toLocaleString('en-IN')}
+                  </td>
                 </tr>
               ))}
             </tbody>
