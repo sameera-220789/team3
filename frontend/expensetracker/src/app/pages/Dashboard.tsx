@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line
+} from 'recharts';
 
 export default function Dashboard() {
   const location = useLocation();
@@ -11,6 +15,7 @@ export default function Dashboard() {
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     return localStorage.getItem("selectedMonth") || new Date().toISOString().slice(0, 7);
   });
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const navigateMonth = (direction: number) => {
     const date = new Date(`${selectedMonth}-01`);
@@ -180,12 +185,44 @@ export default function Dashboard() {
           </div>
           <div className="budget-header-right">
             <ThemeToggle />
-            <button className="btn btn-secondary">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M3 3L17 3V13L10 17L3 13V3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              Export Report
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button className="btn btn-secondary" onClick={() => setShowExportMenu(!showExportMenu)}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M3 3L17 3V13L10 17L3 13V3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                Export Report
+              </button>
+              {showExportMenu && (
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                  backgroundColor: 'var(--color-popover)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  zIndex: 100, padding: '8px', minWidth: '150px', border: '1px solid var(--color-border)'
+                }}>
+                  <button 
+                    style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '14px', color: 'var(--color-popover-foreground)' }}
+                    onClick={() => {
+                       window.open(`http://localhost:5000/api/reports/download/pdf?userId=${user.id}&month=${selectedMonth}`, '_blank');
+                       setShowExportMenu(false);
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-muted)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    Download PDF
+                  </button>
+                  <button 
+                    style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '14px', color: 'var(--color-popover-foreground)' }}
+                    onClick={() => {
+                        window.open(`http://localhost:5000/api/reports/download/csv?userId=${user.id}&month=${selectedMonth}`, '_blank');
+                        setShowExportMenu(false);
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-muted)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    Download CSV
+                  </button>
+                </div>
+              )}
+            </div>
             <Link to="/add-expense" className="btn btn-primary">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -972,80 +1009,155 @@ export function DashboardTransactions() {
 }
 
 export function DashboardReports() {
+  const { selectedMonth } = useOutletContext<{ selectedMonth: string }>();
+  const [reportData, setReportData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const user = getUser();
+
+  const fetchReportData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:5000/api/reports/monthly?userId=${user.id}&month=${selectedMonth}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReportData(data);
+      }
+    } catch (error) {
+      console.error("Error fetching report data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) fetchReportData();
+  }, [selectedMonth]);
+
+  const handleDownload = (type: 'pdf' | 'csv') => {
+    window.open(`http://localhost:5000/api/reports/download/${type}?userId=${user.id}&month=${selectedMonth}`, '_blank');
+  };
+
+  if (loading) return <div className="loading-container">Loading Reports...</div>;
+  if (!reportData) return <div>No data available for this month.</div>;
+
+  const pieData = Object.entries(reportData.categoryBreakdown).map(([name, value]) => ({ name, value }));
+  const barData = Object.entries(reportData.dailySummary).map(([day, amount]) => ({ day: `Day ${day}`, amount })).sort((a, b) => parseInt(a.day.split(' ')[1]) - parseInt(b.day.split(' ')[1]));
+
+  const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#F97316'];
+
   return (
-    <div className="dashboard-grid-3">
-      <div className="card">
+    <div className="reports-section">
+      {/* Summary Cards */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper red">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M16 8L12 4L8 8M12 4V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><path d="M3 20H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+            </div>
+            <span className="stat-label">Total Expenses</span>
+          </div>
+          <p className="stat-value">₹{reportData.totalExpenses.toLocaleString('en-IN')}</p>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper blue">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M3 9H21M9 21V9" stroke="currentColor" strokeWidth="2" /></svg>
+            </div>
+            <span className="stat-label">Total Budget</span>
+          </div>
+          <p className="stat-value">₹{reportData.totalBudget.toLocaleString('en-IN')}</p>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className={`stat-icon-wrapper ${reportData.remainingBudget < 0 ? 'red' : 'green'}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" /></svg>
+            </div>
+            <span className="stat-label">Remaining Budget</span>
+          </div>
+          <p className="stat-value" style={{ color: reportData.remainingBudget < 0 ? '#ef4444' : '#10b981' }}>₹{reportData.remainingBudget.toLocaleString('en-IN')}</p>
+        </div>
+      </div>
+
+      <div className="dashboard-grid">
+        {/* Category breakdown Chart */}
+        <div className="card">
+          <div className="card-header-section">
+            <h3 className="card-title">Category Breakdown</h3>
+          </div>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <RechartsTooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Daily Spending Trend Chart */}
+        <div className="card">
+          <div className="card-header-section">
+            <h3 className="card-title">Daily Spending Trend</h3>
+          </div>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <RechartsTooltip />
+                <Bar dataKey="amount" fill="#6366F1" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Expenses Table */}
+      <div className="card" style={{ marginTop: '24px' }}>
         <div className="card-header-section">
-          <h3 className="card-title">Budget Alerts</h3>
+          <h3 className="card-title">Detailed Expenses</h3>
         </div>
-        <div className="alerts-list">
-          <div className="alert-item danger">
-            <div className="alert-icon-circle danger">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="alert-content-small">
-              <p className="alert-title-small">Bills Budget Exceeded</p>
-              <p className="alert-text-small">₹200 over limit</p>
-            </div>
-          </div>
-          <div className="alert-item warning">
-            <div className="alert-icon-circle warning">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M10 6V10M10 14H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="alert-content-small">
-              <p className="alert-title-small">Shopping Near Limit</p>
-              <p className="alert-text-small">90% of budget used</p>
-            </div>
-          </div>
-          <div className="alert-item success">
-            <div className="alert-icon-circle success">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M6 10L9 13L14 7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="alert-content-small">
-              <p className="alert-title-small">Food Budget On Track</p>
-              <p className="alert-text-small">
-                82% used with 15 days left
-              </p>
-            </div>
-          </div>
-          <div className="alert-item info">
-            <div className="alert-icon-circle info">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M10 11V15M10 7H10.01M18 10C18 14.4183 14.4183 18 10 18C5.58172 18 2 14.4183 2 10C2 5.58172 5.58172 2 10 2C14.4183 2 18 5.58172 18 10Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="alert-content-small">
-              <p className="alert-title-small">Recurring Bill Due</p>
-              <p className="alert-text-small">Netflix - Mar 15</p>
-            </div>
-          </div>
+        <div className="transactions-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reportData.expenses.map((exp: any) => (
+                <tr key={exp._id}>
+                  <td>{new Date(exp.date).toLocaleDateString()}</td>
+                  <td>{exp.description || 'N/A'}</td>
+                  <td><span className={`category-badge other`}>{exp.category}</span></td>
+                  <td className="amount">₹{exp.amount.toLocaleString('en-IN')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '20px', marginTop: '32px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <button onClick={() => handleDownload('pdf')} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PDF
+        </button>
+        <button onClick={() => handleDownload('csv')} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download CSV
+        </button>
       </div>
     </div>
   );
