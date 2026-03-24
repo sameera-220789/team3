@@ -78,8 +78,17 @@ const sendEmail = async (to, subject, text) => {
 
 const app = express();
 
+// Global API request counter for admin system health
+global.apiRequestCount = 0;
+
 app.use(express.json());
 app.use(cors());
+
+// Count every API request
+app.use((req, res, next) => {
+  global.apiRequestCount++;
+  next();
+});
 
 // Session Middleware (needed for passport)
 app.use(
@@ -105,6 +114,7 @@ const groupRoutes = require("../routes/groupRoutes");
 const receiptRoutes = require("../routes/receiptRoutes");
 const goalRoutes = require("../routes/goalRoutes");
 const paymentRoutes = require("../routes/paymentRoutes");
+const adminRoutes = require("../routes/adminRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/auth", oauthRoutes); // Root level /auth for OAuth callbacks
@@ -116,6 +126,7 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Static folder for uploads
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

@@ -14,7 +14,8 @@ export default function Admin() {
 
   useEffect(() => {
     const role = localStorage.getItem("role");
-    if (role !== "admin") {
+    const token = localStorage.getItem("adminToken");
+    if (role !== "admin" || !token) {
       navigate("/admin-login", { replace: true });
     }
   }, [navigate]);
@@ -152,7 +153,8 @@ export default function Admin() {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             localStorage.removeItem("role");
-            window.location.href = "/login";
+            localStorage.removeItem("adminToken");
+            window.location.href = "/admin-login";
           }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M13 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V15C17 15.5304 16.7893 16.0391 16.4142 16.4142C16.0391 16.7893 15.5304 17 15 17H13M7 13L3 10M3 10L7 7M3 10H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
