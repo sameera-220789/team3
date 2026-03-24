@@ -6,6 +6,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line
 } from 'recharts';
+import { API_BASE_URL } from "../utils/config";
 
 export default function Dashboard() {
   const location = useLocation();
@@ -201,7 +202,7 @@ export default function Dashboard() {
                   <button 
                     style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '14px', color: 'var(--color-popover-foreground)' }}
                     onClick={() => {
-                       window.open(`http://localhost:5000/api/reports/download/pdf?userId=${user.id}&month=${selectedMonth}`, '_blank');
+                       window.open(`${API_BASE_URL}/api/reports/download/pdf?userId=${user.id}&month=${selectedMonth}`, '_blank');
                        setShowExportMenu(false);
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-muted)')}
@@ -212,7 +213,7 @@ export default function Dashboard() {
                   <button 
                     style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '14px', color: 'var(--color-popover-foreground)' }}
                     onClick={() => {
-                        window.open(`http://localhost:5000/api/reports/download/csv?userId=${user.id}&month=${selectedMonth}`, '_blank');
+                        window.open(`${API_BASE_URL}/api/reports/download/csv?userId=${user.id}&month=${selectedMonth}`, '_blank');
                         setShowExportMenu(false);
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-muted)')}
@@ -266,9 +267,9 @@ export function DashboardOverview() {
       if(!user) return;
       const fetchOpts = { cache: "no-store" as RequestCache };
       const [expenseRes, budgetRes, alertRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
-        fetch(`http://localhost:5000/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
-        fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
+        fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts)
       ]);
       
       if (expenseRes.ok && budgetRes.ok && alertRes.ok) {
@@ -280,14 +281,14 @@ export function DashboardOverview() {
         setAlerts(alertData);
 
         // Fetch user total savings
-        const userRes = await fetch(`http://localhost:5000/api/auth/profile?userId=${user.id}`);
+        const userRes = await fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`);
         if (userRes.ok) {
            const userData = await userRes.json();
            setTotalSavings(userData.totalSavings || 0);
         }
 
         // Fetch Spending Insights
-        const insightsRes = await fetch(`http://localhost:5000/api/reports/spending-insights?userId=${user.id}`);
+        const insightsRes = await fetch(`${API_BASE_URL}/api/reports/spending-insights?userId=${user.id}`);
         if (insightsRes.ok) {
           const insightsData = await insightsRes.json();
           setInsights(insightsData);
@@ -312,7 +313,7 @@ export function DashboardOverview() {
       try {
         const user = getUser();
         if(!user) return;
-        const res = await fetch(`http://localhost:5000/api/expenses?userId=${user.id}&range=${chartRange}`, { cache: "no-store" as RequestCache });
+        const res = await fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&range=${chartRange}`, { cache: "no-store" as RequestCache });
         if (res.ok) setChartExpenses(await res.json());
       } catch (err) {
         console.error("Error fetching chart data:", err);
@@ -335,7 +336,7 @@ export function DashboardOverview() {
       const user = getUser();
       if (!user) return;
       
-      const response = await fetch("http://localhost:5000/api/budgets", {
+      const response = await fetch(`${API_BASE_URL}/api/budgets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, category: 'total', limit: numericValue })
@@ -922,7 +923,7 @@ export function DashboardTransactions() {
       try {
         const user = getUser();
         if (!user) return;
-        const res = await fetch(`http://localhost:5000/api/expenses?userId=${user.id}`);
+        const res = await fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}`);
         if (res.ok) {
           const data = await res.json();
           setExpenses(data);
@@ -1017,7 +1018,7 @@ export function DashboardReports() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:5000/api/reports/monthly?userId=${user.id}&month=${selectedMonth}`);
+      const res = await fetch(`${API_BASE_URL}/api/reports/monthly?userId=${user.id}&month=${selectedMonth}`);
       if (res.ok) {
         const data = await res.json();
         setReportData(data);
@@ -1034,7 +1035,7 @@ export function DashboardReports() {
   }, [selectedMonth]);
 
   const handleDownload = (type: 'pdf' | 'csv') => {
-    window.open(`http://localhost:5000/api/reports/download/${type}?userId=${user.id}&month=${selectedMonth}`, '_blank');
+    window.open(`${API_BASE_URL}/api/reports/download/${type}?userId=${user.id}&month=${selectedMonth}`, '_blank');
   };
 
   if (loading) return <div className="loading-container">Loading Reports...</div>;

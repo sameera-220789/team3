@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../utils/config";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
 
@@ -97,7 +98,7 @@ export default function Budget() {
       if (!user) return;
       // Pass both ID and name/email if membership relies on string names
       const userName = `${user.firstName} ${user.lastName}`.trim();
-      const res = await fetch(`http://localhost:5000/api/groups?userId=${user.id}&userName=${encodeURIComponent(userName)}&userEmail=${encodeURIComponent(user.email)}`);
+      const res = await fetch(`${API_BASE_URL}/api/groups?userId=${user.id}&userName=${encodeURIComponent(userName)}&userEmail=${encodeURIComponent(user.email)}`);
       if (res.ok) {
         const data = await res.json();
         setGroups(data);
@@ -112,7 +113,7 @@ export default function Budget() {
       const user = getUser();
       if (!user) return;
 
-      const response = await fetch("http://localhost:5000/api/budgets/finalize", {
+      const response = await fetch(`${API_BASE_URL}/api/budgets/finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, month: selectedMonth, option })
@@ -136,7 +137,7 @@ export default function Budget() {
       const user = getUser();
       if (!user) return;
 
-      const res = await fetch("http://localhost:5000/api/budgets/undo-finalize", {
+      const res = await fetch(`${API_BASE_URL}/api/budgets/undo-finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, month: selectedMonth })
@@ -157,8 +158,8 @@ export default function Budget() {
   const fetchGroupDetails = async (groupId: string) => {
     try {
       const [expRes, balRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/groups/${groupId}/expenses`),
-        fetch(`http://localhost:5000/api/groups/${groupId}/balance`)
+        fetch(`${API_BASE_URL}/api/groups/${groupId}/expenses`),
+        fetch(`${API_BASE_URL}/api/groups/${groupId}/balance`)
       ]);
 
       if (expRes.ok && balRes.ok) {
@@ -184,8 +185,8 @@ export default function Budget() {
 
       const fetchOpts = { cache: "no-store" as RequestCache };
       const [expenseRes, budgetRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
-        fetch(`http://localhost:5000/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts)
+        fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts)
       ]);
 
       if (expenseRes.ok && budgetRes.ok) {
@@ -262,7 +263,7 @@ export default function Budget() {
       const user = getUser();
       if (!user) return;
 
-      const response = await fetch("http://localhost:5000/api/budgets", {
+      const response = await fetch(`${API_BASE_URL}/api/budgets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue, month: selectedMonth })
@@ -299,7 +300,7 @@ export default function Budget() {
 
       if (!window.confirm("Are you sure you want to delete this budget category?")) return;
 
-      const response = await fetch(`http://localhost:5000/api/budgets/${categoryId}?userId=${user.id}&month=${selectedMonth}`, {
+      const response = await fetch(`${API_BASE_URL}/api/budgets/${categoryId}?userId=${user.id}&month=${selectedMonth}`, {
         method: "DELETE"
       });
 
@@ -331,7 +332,7 @@ export default function Budget() {
         currentMembers.push(userName);
       }
 
-      const res = await fetch("http://localhost:5000/api/groups/create", {
+      const res = await fetch(`${API_BASE_URL}/api/groups/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -369,8 +370,8 @@ export default function Budget() {
       const splitBetween = splitInvolvedMembers.map(m => ({ member: m, share }));
 
       const url = editingExpenseId 
-        ? `http://localhost:5000/api/groups/expense/${editingExpenseId}`
-        : "http://localhost:5000/api/groups/expense/add";
+        ? `${API_BASE_URL}/api/groups/expense/${editingExpenseId}`
+        : `${API_BASE_URL}/api/groups/expense/add`;
       const method = editingExpenseId ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -405,7 +406,7 @@ export default function Budget() {
   const handleDeleteSplitExpense = async (expenseId: string) => {
     if (!window.confirm("Are you sure you want to delete this expense?")) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/groups/expense/${expenseId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/groups/expense/${expenseId}`, {
         method: "DELETE"
       });
       if (res.ok) {
@@ -901,7 +902,7 @@ export default function Budget() {
                         const user = getUser();
                         if (!user) return;
 
-                        const response = await fetch("http://localhost:5000/api/budgets", {
+                        const response = await fetch(`${API_BASE_URL}/api/budgets`, {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ userId: user.id, category: categoryId, limit: numericValue, month: selectedMonth })

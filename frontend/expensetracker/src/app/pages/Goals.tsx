@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { getUser } from "../utils/api";
+import { API_BASE_URL } from "../utils/config";
 
 export default function Goals() {
   const navigate = useNavigate();
@@ -37,9 +38,9 @@ export default function Goals() {
       const month = new Date().toISOString().slice(0, 7);
 
       const [goalsRes, profileRes, budgetRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/goals?userId=${user.id}`, { cache: "no-store" }),
-        fetch(`http://localhost:5000/api/auth/profile?userId=${user.id}`, { cache: "no-store" }),
-        fetch(`http://localhost:5000/api/budgets?userId=${user.id}&month=${month}`, { cache: "no-store" })
+        fetch(`${API_BASE_URL}/api/goals?userId=${user.id}`, { cache: "no-store" }),
+        fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`, { cache: "no-store" }),
+        fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${month}`, { cache: "no-store" })
       ]);
 
       if (goalsRes.ok) setGoals(await goalsRes.json());
@@ -70,7 +71,7 @@ export default function Goals() {
     if (!goalName || !targetAmount) return;
 
     try {
-      const res = await fetch("http://localhost:5000/api/goals", {
+      const res = await fetch(`${API_BASE_URL}/api/goals`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -110,7 +111,7 @@ export default function Goals() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/goals/${selectedGoal._id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/goals/${selectedGoal._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -137,7 +138,7 @@ export default function Goals() {
     if (e) e.stopPropagation();
     if (!window.confirm("Delete this goal?")) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/goals/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE_URL}/api/goals/${id}`, { method: "DELETE" });
       if (res.ok) {
         fetchData();
       }

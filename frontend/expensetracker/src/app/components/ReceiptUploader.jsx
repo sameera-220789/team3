@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { getUser } from "../utils/api";
+import { API_BASE_URL } from "../utils/config";
 
 export default function ReceiptUploader({ onExtracted }) {
   const fileInputRef = useRef(null);
@@ -35,7 +36,7 @@ export default function ReceiptUploader({ onExtracted }) {
         fd.append("userId", user.id);
       }
 
-      const res = await fetch("http://localhost:5000/api/receipts/scan", {
+      const res = await fetch(`${API_BASE_URL}/api/receipts/scan`, {
         method: "POST",
         body: fd,
         // Increased timeout or signaling could be handled here if needed, 
