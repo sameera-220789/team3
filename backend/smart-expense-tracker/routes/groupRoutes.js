@@ -10,6 +10,8 @@ router.get("/", groupController.getGroups);
 
 // Add a split expense
 router.post("/expense/add", groupController.addSplitExpense);
+router.put("/expense/:id", groupController.editSplitExpense);
+router.delete("/expense/:id", groupController.deleteSplitExpense);
 
 // Get expenses for a specific group
 router.get("/:id/expenses", groupController.getGroupExpenses);
