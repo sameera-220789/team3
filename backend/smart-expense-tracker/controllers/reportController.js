@@ -1,6 +1,9 @@
 const Expense = require("../models/Expense");
 const User = require("../models/User");
+const Budget = require("../models/Budget");
 const sendEmail = require("../config/email");
+const PDFDocument = require("pdfkit");
+const { Parser } = require("json2csv");
 
 // TOTAL EXPENSE REPORT
 exports.getTotalReport = async (req, res) => {
@@ -198,6 +201,150 @@ exports.getSpendingInsights = async (req, res) => {
     });
 
     res.json(insights);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET MONTHLY REPORT
+exports.getMonthlyReport = async (req, res) => {
+  try {
+    const { userId, month } = req.query; // format: YYYY-MM
+    if (!userId || !month) return res.status(400).json({ message: "userId and month are required" });
+
+    const startDate = new Date(`${month}-01T00:00:00Z`);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const expenses = await Expense.find({
+      userId,
+      date: { $gte: startDate, $lt: endDate }
+    }).sort({ date: -1 });
+
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+    const categoryBreakdown = {};
+    const dailySummary = {};
+
+    expenses.forEach(e => {
+        const cat = e.category || "Other";
+        categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + e.amount;
+
+        const day = new Date(e.date).getDate();
+        dailySummary[day] = (dailySummary[day] || 0) + e.amount;
+    });
+
+    // Fetch budget for the month
+    const budgets = await Budget.find({ userId, month });
+    const totalBudgetDoc = budgets.find(b => b.category === 'total');
+    const totalBudgetLimit = totalBudgetDoc ? totalBudgetDoc.limit : 0;
+    const remainingBudget = totalBudgetLimit - totalExpenses;
+
+    res.json({
+      month,
+      totalExpenses,
+      totalBudget: totalBudgetLimit,
+      remainingBudget,
+      categoryBreakdown,
+      dailySummary,
+      expenses
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// DOWNLOAD PDF REPORT
+exports.downloadPDF = async (req, res) => {
+  try {
+    const { userId, month } = req.query;
+    if (!userId || !month) return res.status(400).send("userId and month are required");
+
+    const startDate = new Date(`${month}-01T00:00:00Z`);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const expenses = await Expense.find({
+        userId,
+        date: { $gte: startDate, $lt: endDate }
+    }).sort({ date: 1 });
+
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+    const doc = new PDFDocument();
+    let filename = `Expense_Report_${month}.pdf`;
+    
+    res.setHeader('Content-disposition', 'attachment; filename="' + filename + '"');
+    res.setHeader('Content-type', 'application/pdf');
+
+    doc.fontSize(20).text(`Expense Report - ${month}`, { align: "center" });
+    doc.moveDown();
+
+    doc.fontSize(14).text(`Total Expenses: ₹${totalExpenses.toFixed(2)}`);
+    doc.moveDown();
+
+    doc.fontSize(16).text("Category-wise Breakdown:");
+    const categoryBreakdown = {};
+    expenses.forEach(e => {
+        const cat = e.category || "Other";
+        categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + e.amount;
+    });
+
+    Object.entries(categoryBreakdown).forEach(([cat, amt]) => {
+        doc.fontSize(12).text(`${cat}: ₹${amt.toFixed(2)}`);
+    });
+    doc.moveDown();
+
+    doc.fontSize(16).text("Expenses List:");
+    doc.moveDown();
+
+    // Table Header
+    doc.fontSize(12).text("Date | Description | Category | Amount", { underline: true });
+    doc.moveDown(0.5);
+
+    expenses.forEach(e => {
+        const dateStr = new Date(e.date).toLocaleDateString();
+        doc.fontSize(10).text(`${dateStr} | ${e.description || '-'} | ${e.category} | ₹${e.amount.toFixed(2)}`);
+    });
+
+    doc.pipe(res);
+    doc.end();
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// DOWNLOAD CSV REPORT
+exports.downloadCSV = async (req, res) => {
+  try {
+    const { userId, month } = req.query;
+    if (!userId || !month) return res.status(400).send("userId and month are required");
+
+    const startDate = new Date(`${month}-01T00:00:00Z`);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const expenses = await Expense.find({
+        userId,
+        date: { $gte: startDate, $lt: endDate }
+    }).sort({ date: 1 });
+
+    const fields = [
+        { label: 'Date', value: (row) => new Date(row.date).toISOString().split('T')[0] },
+        { label: 'Description', value: 'description' },
+        { label: 'Category', value: 'category' },
+        { label: 'Amount', value: 'amount' }
+    ];
+
+    const json2csvParser = new Parser({ fields });
+    const csv = json2csvParser.parse(expenses);
+
+    res.header("Content-Type", "text/csv");
+    res.attachment(`Expense_Report_${month}.csv`);
+    res.send(csv);
 
   } catch (error) {
     res.status(500).json({ message: error.message });

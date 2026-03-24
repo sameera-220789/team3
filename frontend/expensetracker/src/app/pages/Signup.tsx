@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../utils/config";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/signup", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -253,7 +254,7 @@ export default function Signup() {
                   className="btn btn-social"
                   onClick={() => {
                     setLoading(true);
-                    window.location.href = "http://localhost:5000/auth/google";
+                    window.location.href = `${API_BASE_URL}/auth/google`;
                   }}
                   disabled={loading}
                 >

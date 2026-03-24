@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../utils/config";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
 
@@ -28,14 +29,12 @@ export default function Profile() {
 
     const fetchProfile = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5000/api/auth/profile?userId=${localUser.id}`
-        );
-        if (res.ok) {
-          const data = await res.json();
+        const response = await fetch(`${API_BASE_URL}/api/auth/profile?userId=${localUser.id}`);
+        if (response.ok) {
+          const data = await response.json();
           setProfile(data);
         } else {
-          const errData = await res.json();
+          const errData = await response.json();
           setError(errData.message || "Failed to load profile.");
         }
       } catch (err) {

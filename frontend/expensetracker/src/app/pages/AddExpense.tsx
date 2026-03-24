@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
 import ReceiptUploader from "../components/ReceiptUploader";
+import { API_BASE_URL } from "../utils/config";
 
 export default function AddExpense() {
   const navigate = useNavigate();
@@ -121,9 +122,9 @@ export default function AddExpense() {
       if (!user) return;
       const fetchOpts = { cache: "no-store" as RequestCache };
       const [expRes, budRes, alertRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
-        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts),
-        fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
+        fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts)
       ]);
       
       const expenses = expRes.ok ? await expRes.json() : [];
@@ -164,8 +165,8 @@ export default function AddExpense() {
       
       const method = editingExpenseId ? "PUT" : "POST";
       const url = editingExpenseId 
-        ? `http://localhost:5000/api/expenses/${editingExpenseId}` 
-        : "http://localhost:5000/api/expenses";
+        ? `${API_BASE_URL}/api/expenses/${editingExpenseId}` 
+        : `${API_BASE_URL}/api/expenses`;
 
       const response = await fetch(url, {
         method,
@@ -216,7 +217,7 @@ export default function AddExpense() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this expense?")) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/expenses/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE_URL}/api/expenses/${id}`, { method: "DELETE" });
       if (res.ok) {
         await fetchRecentExpenses();
       } else {
@@ -375,7 +376,7 @@ export default function AddExpense() {
 
                       if (shouldSplit) {
                         for (const item of items) {
-                          await fetch("http://localhost:5000/api/expenses", {
+                          await fetch(`${API_BASE_URL}/api/expenses`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
@@ -395,7 +396,7 @@ export default function AddExpense() {
                         if (items && items.length > 1) {
                            desc = `Itemized bill: ${items.map((i: any) => i.description).join(", ")}`;
                         }
-                        await fetch("http://localhost:5000/api/expenses", {
+                        await fetch(`${API_BASE_URL}/api/expenses`, {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({

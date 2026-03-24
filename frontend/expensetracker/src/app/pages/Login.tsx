@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../utils/config";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -189,7 +190,7 @@ export default function Login() {
                   className="btn btn-social"
                   onClick={() => {
                     setIsLoading(true);
-                    window.location.href = "http://localhost:5000/auth/google";
+                    window.location.href = `${API_BASE_URL}/auth/google`;
                   }}
                   disabled={isLoading}
                 >
