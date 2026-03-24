@@ -115,9 +115,11 @@ const receiptRoutes = require("../routes/receiptRoutes");
 const goalRoutes = require("../routes/goalRoutes");
 const paymentRoutes = require("../routes/paymentRoutes");
 const adminRoutes = require("../routes/adminRoutes");
+const recurringRoutes = require("../routes/recurringRoutes");
+const { checkReminders } = require("../services/reminderService");
 
 app.use("/api/auth", authRoutes);
-app.use("/auth", oauthRoutes); // Root level /auth for OAuth callbacks
+app.use("/auth", oauthRoutes); 
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/reports", reportRoutes);
@@ -127,6 +129,15 @@ app.use("/api/receipts", receiptRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/recurring", recurringRoutes);
+
+// Recurring Bill Reminders Service (check every 15 mins)
+setInterval(() => {
+  console.log("Checking for bill reminders...");
+  checkReminders();
+}, 15 * 60 * 1000);
+// Also run once on startup
+checkReminders();
 
 // Static folder for uploads
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

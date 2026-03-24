@@ -8,7 +8,7 @@ const alertSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["milestone", "limit_reached", "category_exceeded"],
+    enum: ["milestone", "limit_reached", "category_exceeded", "bill_reminder"],
     required: true
   },
   threshold: {

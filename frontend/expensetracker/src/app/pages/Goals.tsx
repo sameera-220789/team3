@@ -11,6 +11,16 @@ export default function Goals() {
   const [unallocatedBudget, setUnallocatedBudget] = useState(0);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [recurringBills, setRecurringBills] = useState<any[]>([]);
+
+  // Recurring Bill Form State
+  const [showAddBillModal, setShowAddBillModal] = useState(false);
+  const [billCategory, setBillCategory] = useState("bills");
+  const [billAmount, setBillAmount] = useState("");
+  const [billDescription, setBillDescription] = useState("");
+  const [billDueDate, setBillDueDate] = useState(new Date().toISOString().split("T")[0]);
+  const [billRecurrence, setBillRecurrence] = useState("monthly");
+  const [billReminderInterval, setBillReminderInterval] = useState("24");
 
   // Modals
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
@@ -37,13 +47,15 @@ export default function Goals() {
       
       const month = new Date().toISOString().slice(0, 7);
 
-      const [goalsRes, profileRes, budgetRes] = await Promise.all([
+      const [goalsRes, profileRes, budgetRes, recurringRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/goals?userId=${user.id}`, { cache: "no-store" }),
         fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`, { cache: "no-store" }),
-        fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${month}`, { cache: "no-store" })
+        fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${month}`, { cache: "no-store" }),
+        fetch(`${API_BASE_URL}/api/recurring?userId=${user.id}`, { cache: "no-store" })
       ]);
 
       if (goalsRes.ok) setGoals(await goalsRes.json());
+      if (recurringRes.ok) setRecurringBills(await recurringRes.json());
       if (profileRes.ok) {
         const profile = await profileRes.json();
         setTotalSavings(profile.totalSavings || 0);
@@ -147,6 +159,65 @@ export default function Goals() {
     }
   };
 
+  const handleMarkAsPaid = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/recurring/${id}/pay`, {
+        method: "PUT"
+      });
+      if (res.ok) {
+        alert("Bill marked as paid and next cycle scheduled!");
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateBill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/recurring`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          category: billCategory,
+          amount: Number(billAmount),
+          description: billDescription,
+          dueDate: billDueDate,
+          recurrence: billRecurrence,
+          reminderInterval: Number(billReminderInterval)
+        })
+      });
+
+      if (res.ok) {
+        alert("Recurring bill added!");
+        setShowAddBillModal(false);
+        setBillAmount("");
+        setBillDescription("");
+        fetchData();
+      } else {
+        alert("Failed to add bill");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteBill = async (id: string) => {
+    if (!window.confirm("Delete this recurring bill?")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/recurring/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="dashboard-page">
       {/* Sidebar */}
@@ -198,12 +269,12 @@ export default function Goals() {
             </svg>
             <span>Budgets</span>
           </Link>
-          <Link to="/goals" className="sidebar-link active">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-               <path d="M12 20L18 12C18 12 21 8.5 21 6.5C21 4.01472 18.9853 2 16.5 2C14.7317 2 13.1979 3.01831 12.5 4.54275C11.8021 3.01831 10.2683 2 8.5 2C6.01472 2 4 4.01472 4 6.5C4 8.5 7 12 7 12L12 20ZM12 20V22M8 22H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <span>Goals</span>
-          </Link>
+            <Link to="/goals" className="sidebar-link active">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                 <path d="M12 20L18 12C18 12 21 8.5 21 6.5C21 4.01472 18.9853 2 16.5 2C14.7317 2 13.1979 3.01831 12.5 4.54275C11.8021 3.01831 10.2683 2 8.5 2C6.01472 2 4 4.01472 4 6.5C4 8.5 7 12 7 12L12 20ZM12 20V22M8 22H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <span>Goals & Reminders</span>
+            </Link>
           <Link to="/dashboard/transactions" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -240,29 +311,41 @@ export default function Goals() {
       <main className="main-content">
         <header className="budget-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 2rem', background: 'var(--color-background)', borderBottom: '1px solid var(--color-gray-200)', position: 'sticky', top: 0, zIndex: 10 }}>
           <div className="budget-header-left">
-            <h1 className="budget-page-title" style={{ fontSize: '1.75rem', fontWeight: 700 }}>Financial Goals</h1>
-            <p className="budget-page-subtitle" style={{ color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>Track your savings targets dynamically</p>
+            <h1 className="budget-page-title" style={{ fontSize: '1.75rem', fontWeight: 700 }}>Goals & Reminders</h1>
+            <p className="budget-page-subtitle" style={{ color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>Track targets and manage repeating bills</p>
           </div>
           <div className="budget-header-right" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <ThemeToggle />
-            <button 
-              className="btn btn-primary" 
-              onClick={() => setShowAddGoalModal(true)}
-              style={{
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-                padding: '0.6rem 1.25rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              Add Goal
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowAddBillModal(true)}
+                style={{ borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add Reminder
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowAddGoalModal(true)}
+                style={{
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                  padding: '0.6rem 1.25rem',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                Add Goal
+              </button>
+            </div>
           </div>
         </header>
 
@@ -440,6 +523,60 @@ export default function Goals() {
               </div>
             )}
           </div>
+
+          {/* Recurring Bills Checklist Section */}
+          <div style={{ marginTop: '3.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Recurring Bills & Reminders 📝</h2>
+                <p style={{ color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>Stay on top of your repeating payments to reach your goals</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              {recurringBills.length > 0 ? recurringBills.map(bill => (
+                <div key={bill._id} className="card" style={{ 
+                  borderRadius: '12px', padding: '1.25rem', borderLeft: `4px solid ${bill.status === 'overdue' ? 'var(--color-danger)' : 'var(--color-primary)'}`,
+                  display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-surface)',
+                  boxShadow: 'var(--shadow-md)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{bill.description || bill.category}</h4>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--color-gray-500)' }}>
+                        Due: {new Date(bill.dueDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span className={`badge ${bill.status}`} style={{ 
+                        fontSize: '0.75rem', padding: '2px 10px', borderRadius: '12px',
+                        backgroundColor: bill.status === 'overdue' ? '#fee2e2' : '#fef3c7',
+                        color: bill.status === 'overdue' ? '#991b1b' : '#92400e',
+                        fontWeight: 600
+                      }}>
+                        {bill.status.toUpperCase()}
+                      </span>
+                      <button onClick={() => handleDeleteBill(bill._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}>🗑️</button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, fontSize: '1.25rem' }}>₹{bill.amount.toLocaleString()}</span>
+                    <button 
+                      onClick={() => handleMarkAsPaid(bill._id)}
+                      className="btn btn-primary"
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                    >
+                      Mark as Paid
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div style={{ gridColumn: '1 / -1', padding: '2.5rem', textAlign: 'center', background: 'var(--color-gray-50)', borderRadius: '12px', border: '1px dashed var(--color-gray-300)', color: 'var(--color-gray-500)' }}>
+                  No recurring bills setup. Track your repeating expenses here.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </main>
 
@@ -497,6 +634,56 @@ export default function Goals() {
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button type="button" className="btn btn-outline" style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', fontWeight: 600 }} onClick={() => setShowAddMoneyModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', fontWeight: 600 }}>Add Funds</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Add Money Modal code ... */}
+      {/* Add Recurring Bill Modal */}
+      {showAddBillModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, backdropFilter: 'blur(4px)' }}>
+          <div className="modal-content" style={{ background: 'var(--color-background)', padding: '2.5rem', width: '100%', maxWidth: '450px', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-gray-900)' }}>Setup Recurring Bill</h2>
+            <form onSubmit={handleCreateBill}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Category</label>
+                  <select className="form-input" value={billCategory} onChange={e => setBillCategory(e.target.value)}>
+                    <option value="bills">Bills & Utilities</option>
+                    <option value="subscriptions">Subscriptions</option>
+                    <option value="rent">Rent</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Amount (₹)</label>
+                  <input type="number" className="form-input" value={billAmount} onChange={e => setBillAmount(e.target.value)} required placeholder="e.g. 500" />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>First Due Date</label>
+                  <input type="date" className="form-input" value={billDueDate} onChange={e => setBillDueDate(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 600 }}>Recurrence</label>
+                  <select className="form-input" value={billRecurrence} onChange={e => setBillRecurrence(e.target.value)}>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>Description</label>
+                <input type="text" className="form-input" value={billDescription} onChange={e => setBillDescription(e.target.value)} placeholder="e.g. Electricity, Netflix" />
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', fontWeight: 600 }} onClick={() => setShowAddBillModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', fontWeight: 600 }}>Save Bill</button>
               </div>
             </form>
           </div>

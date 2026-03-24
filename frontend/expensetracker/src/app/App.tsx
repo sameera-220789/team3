@@ -45,6 +45,7 @@ export function App() {
         <Route path="/goals" element={<Goals />} />
         <Route path="/add-expense" element={<AddExpense />} />
         <Route path="/profile" element={<Profile />} />
+
         <Route path="/admin" element={<Admin />}>
           <Route index element={<AdminOverview />} />
           <Route path="users" element={<AdminUsers />} />
