@@ -7,6 +7,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line
 } from 'recharts';
 import { API_BASE_URL } from "../utils/config";
+import { SpendingCalendar } from "../components/SpendingCalendar";
+import { getEmoji } from "../utils/formatters";
 
 // Color palette for dynamic categories
 const categoryColors: Record<string, string> = {
@@ -23,21 +25,6 @@ const categoryColors: Record<string, string> = {
 const getCategoryColor = (cat: string, idx: number) => {
   const fallbacks = ['#6366F1','#8B5CF6','#EC4899','#F59E0B','#10B981','#3B82F6','#F97316','#94A3B8'];
   return categoryColors[cat] || fallbacks[idx % fallbacks.length];
-};
-
-const getEmoji = (category: string) => {
-  switch (category?.toLowerCase()) {
-    case 'food': return '🍔';
-    case 'travel': return '🚕';
-    case 'shopping': return '🛍️';
-    case 'bills': return '📄';
-    case 'entertainment': return '🎬';
-    case 'healthcare': return '🏥';
-    case 'education': return '📚';
-    case 'income': return '💰';
-    case 'salary': return '💵';
-    default: return '💼';
-  }
 };
 
 const getCategoryTheme = (category: string) => {
@@ -60,6 +47,7 @@ export default function Dashboard() {
     return localStorage.getItem("selectedMonth") || new Date().toISOString().slice(0, 7);
   });
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const navigateMonth = (direction: number) => {
     const date = new Date(`${selectedMonth}-01`);
@@ -240,6 +228,25 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="budget-header-right">
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setShowCalendar(true)}
+              style={{ padding: '8px', minWidth: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="View Spending Calendar"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+                <path d="M8 14h.01"></path>
+                <path d="M12 14h.01"></path>
+                <path d="M16 14h.01"></path>
+                <path d="M8 18h.01"></path>
+                <path d="M12 18h.01"></path>
+                <path d="M16 18h.01"></path>
+              </svg>
+            </button>
             <ThemeToggle />
             <div style={{ position: 'relative' }}>
               <button className="btn btn-secondary" onClick={() => setShowExportMenu(!showExportMenu)}>
@@ -298,6 +305,12 @@ export default function Dashboard() {
         <div className="page-content">
           <Outlet context={{ selectedMonth }} />
         </div>
+        {showCalendar && (
+          <SpendingCalendar 
+            initialMonth={selectedMonth} 
+            onClose={() => setShowCalendar(false)} 
+          />
+        )}
       </main>
     </div>
   );
