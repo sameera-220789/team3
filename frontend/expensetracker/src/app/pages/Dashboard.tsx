@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
 
@@ -7,6 +7,24 @@ export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = getUser();
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    return localStorage.getItem("selectedMonth") || new Date().toISOString().slice(0, 7);
+  });
+
+  const navigateMonth = (direction: number) => {
+    const date = new Date(`${selectedMonth}-01`);
+    date.setMonth(date.getMonth() + direction);
+    const newMonth = date.toISOString().slice(0, 7);
+    setSelectedMonth(newMonth);
+    localStorage.setItem("selectedMonth", newMonth);
+  };
+
+  const setPresentMonth = () => {
+    const newMonth = new Date().toISOString().slice(0, 7);
+    setSelectedMonth(newMonth);
+    localStorage.setItem("selectedMonth", newMonth);
+  };
   
   useEffect(() => {
     if (!user) {
@@ -79,6 +97,12 @@ export default function Dashboard() {
             </svg>
             <span>Budgets</span>
           </Link>
+          <Link to="/goals" className="sidebar-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+               <path d="M12 20L18 12C18 12 21 8.5 21 6.5C21 4.01472 18.9853 2 16.5 2C14.7317 2 13.1979 3.01831 12.5 4.54275C11.8021 3.01831 10.2683 2 8.5 2C6.01472 2 4 4.01472 4 6.5C4 8.5 7 12 7 12L12 20ZM12 20V22M8 22H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span>Goals</span>
+          </Link>
           <NavLink
             to="/dashboard/transactions"
             className={({ isActive }) =>
@@ -127,6 +151,32 @@ export default function Dashboard() {
           <div className="budget-header-left">
             <h1 className="budget-page-title">{getPageTitle()}</h1>
             <p className="budget-page-subtitle">{getPageSubtitle()}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+              <button 
+                onClick={() => navigateMonth(-1)}
+                className="month-nav-btn"
+                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+              >
+                &lsaquo; Prev
+              </button>
+              <button 
+                onClick={setPresentMonth}
+                className="month-nav-btn present-btn"
+                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+              >
+                Present
+              </button>
+              <p className="budget-page-subtitle" style={{ margin: 0, fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem', minWidth: '120px', textAlign: 'center' }}>
+                {new Date(`${selectedMonth}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </p>
+              <button 
+                onClick={() => navigateMonth(1)}
+                className="month-nav-btn"
+                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+              >
+                Next &rsaquo;
+              </button>
+            </div>
           </div>
           <div className="budget-header-right">
             <ThemeToggle />
@@ -153,7 +203,7 @@ export default function Dashboard() {
         </header>
 
         <div className="page-content">
-          <Outlet />
+          <Outlet context={{ selectedMonth }} />
         </div>
       </main>
     </div>
@@ -161,6 +211,7 @@ export default function Dashboard() {
 }
 
 export function DashboardOverview() {
+  const { selectedMonth } = useOutletContext<{ selectedMonth: string }>();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [budgets, setBudgets] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -178,8 +229,8 @@ export function DashboardOverview() {
       if(!user) return;
       const fetchOpts = { cache: "no-store" as RequestCache };
       const [expenseRes, budgetRes, alertRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/expenses?userId=${user.id}`, fetchOpts),
-        fetch(`http://localhost:5000/api/budgets?userId=${user.id}`, fetchOpts),
+        fetch(`http://localhost:5000/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
+        fetch(`http://localhost:5000/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
         fetch(`http://localhost:5000/api/alerts?userId=${user.id}`, fetchOpts)
       ]);
       
@@ -217,7 +268,7 @@ export function DashboardOverview() {
     // Poll every 30 seconds for dynamic updates after adding expenses
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedMonth]);
 
   useEffect(() => {
     const fetchChartData = async () => {

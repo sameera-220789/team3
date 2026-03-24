@@ -9,6 +9,7 @@ import Dashboard, {
   DashboardReports,
 } from "./pages/Dashboard";
 import Budget from "./pages/Budget";
+import Goals from "./pages/Goals";
 import AddExpense from "./pages/AddExpense";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
@@ -39,6 +40,7 @@ export function App() {
           <Route path="reports" element={<DashboardReports />} />
         </Route>
         <Route path="/budget" element={<Budget />} />
+        <Route path="/goals" element={<Goals />} />
         <Route path="/add-expense" element={<AddExpense />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />}>

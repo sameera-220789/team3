@@ -24,22 +24,16 @@ exports.createGroup = async (req, res) => {
   }
 };
 
-// Get Groups for a User (either creator or a member)
 exports.getGroups = async (req, res) => {
   try {
-    const { userId, userName } = req.query; // assuming userName or email is passed to find memberships
-    
-    // We fetch groups where the user is the creator OR their name is in the members array
-    // This requires the frontend to pass the user's name/email that perfectly matches the member array string
-    const filter = {};
-    if (userId && userName) {
-      filter.$or = [
-        { createdBy: userId },
-        { members: userName }
-      ];
-    } else if (userId) {
-      filter.createdBy = userId;
-    }
+    const { userId, userName, userEmail } = req.query;
+
+    const orConditions = [];
+    if (userId) orConditions.push({ createdBy: userId });
+    if (userName) orConditions.push({ members: userName });
+    if (userEmail) orConditions.push({ members: userEmail });
+
+    const filter = orConditions.length > 0 ? { $or: orConditions } : {};
 
     const groups = await Group.find(filter).sort({ createdAt: -1 });
     res.json(groups);
@@ -83,6 +77,41 @@ exports.getGroupExpenses = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching group expenses", error });
+  }
+};
+
+// Edit Split Expense
+exports.editSplitExpense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, amount, paidBy, splitBetween } = req.body;
+    
+    const expense = await SplitExpense.findById(id);
+    if (!expense) return res.status(404).json({ message: "Expense not found" });
+
+    if (description) expense.description = description;
+    if (amount) expense.amount = amount;
+    if (paidBy) expense.paidBy = paidBy;
+    if (splitBetween) expense.splitBetween = splitBetween;
+    
+    const updatedExpense = await expense.save();
+    res.json(updatedExpense);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating expense", error });
+  }
+};
+
+// Delete Split Expense
+exports.deleteSplitExpense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const removed = await SplitExpense.findByIdAndDelete(id);
+    if (!removed) return res.status(404).json({ message: "Expense not found" });
+    res.json({ message: "Expense deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting expense", error });
   }
 };
 

@@ -211,17 +211,24 @@ exports.finalizeMonth = async (req, res) => {
       res.json({ message: "Budget carried forward to next month", amount: remaining });
 
     } else if (option === 'savings') {
-      totalBudgetDoc.savings = remaining;
+      const categoryBudgets = budgets.filter(b => b.category !== 'total');
+      const unspentCategories = categoryBudgets.reduce((sum, b) => sum + Math.max(0, b.remainingAmount), 0);
+      
+      if (unspentCategories <= 0) {
+        return res.status(400).json({ message: "No unspent allocated budgets to move to savings" });
+      }
+
+      totalBudgetDoc.savings = unspentCategories;
       totalBudgetDoc.carryForward = false;
       await totalBudgetDoc.save();
 
       const user = await User.findById(userId);
       if (user) {
-        user.totalSavings = (Number(user.totalSavings) || 0) + remaining;
+        user.totalSavings = (Number(user.totalSavings) || 0) + unspentCategories;
         await user.save();
       }
 
-      res.json({ message: "Remaining budget moved to savings", amount: remaining });
+      res.json({ message: "Unspent category budgets moved to savings", amount: unspentCategories });
     } else {
       res.status(400).json({ message: "Invalid option" });
     }

@@ -55,9 +55,9 @@ export default function Budget() {
   const [loading, setLoading] = useState(true);
   
   // Selected Month (YYYY-MM)
-  const [selectedMonth, setSelectedMonth] = useState<string>(
-    new Date().toISOString().slice(0, 7)
-  );
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    return localStorage.getItem("selectedMonth") || new Date().toISOString().slice(0, 7);
+  });
 
   // Split Expense State
   const [groups, setGroups] = useState<any[]>([]);
@@ -75,6 +75,7 @@ export default function Budget() {
   const [splitAmount, setSplitAmount] = useState("");
   const [splitPaidBy, setSplitPaidBy] = useState("");
   const [splitInvolvedMembers, setSplitInvolvedMembers] = useState<string[]>([]);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBudgetsData();
@@ -96,7 +97,7 @@ export default function Budget() {
       if (!user) return;
       // Pass both ID and name/email if membership relies on string names
       const userName = `${user.firstName} ${user.lastName}`.trim();
-      const res = await fetch(`http://localhost:5000/api/groups?userId=${user.id}&userName=${encodeURIComponent(userName)}`);
+      const res = await fetch(`http://localhost:5000/api/groups?userId=${user.id}&userName=${encodeURIComponent(userName)}&userEmail=${encodeURIComponent(user.email)}`);
       if (res.ok) {
         const data = await res.json();
         setGroups(data);
@@ -244,12 +245,6 @@ export default function Budget() {
   // Utilization based on actual spend vs overall budget
   const overallUtilization = overallTotalBudget === 0 ? 0 : (overallSpentAmount / overallTotalBudget) * 100;
 
-  const navigateMonth = (direction: number) => {
-    const date = new Date(`${selectedMonth}-01`);
-    date.setMonth(date.getMonth() + direction);
-    setSelectedMonth(date.toISOString().slice(0, 7));
-  };
-
   const startEditing = (category: BudgetCategory) => {
     setEditingCategoryId(category.id);
     setEditingValue(category.budget.toString());
@@ -373,8 +368,13 @@ export default function Budget() {
       const share = numAmount / splitInvolvedMembers.length;
       const splitBetween = splitInvolvedMembers.map(m => ({ member: m, share }));
 
-      const res = await fetch("http://localhost:5000/api/groups/expense/add", {
-        method: "POST",
+      const url = editingExpenseId 
+        ? `http://localhost:5000/api/groups/expense/${editingExpenseId}`
+        : "http://localhost:5000/api/groups/expense/add";
+      const method = editingExpenseId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupId: activeGroupId,
@@ -387,17 +387,35 @@ export default function Budget() {
 
       if (res.ok) {
         setShowAddExpenseModal(false);
+        setEditingExpenseId(null);
         setSplitDesc("");
         setSplitAmount("");
         setSplitPaidBy("");
         setSplitInvolvedMembers([]);
         if (activeGroupId) fetchGroupDetails(activeGroupId);
       } else {
-        alert("Failed to add split expense");
+        alert("Failed to save split expense");
       }
     } catch (e) {
       console.error(e);
       alert("Network error");
+    }
+  };
+
+  const handleDeleteSplitExpense = async (expenseId: string) => {
+    if (!window.confirm("Are you sure you want to delete this expense?")) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/groups/expense/${expenseId}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        if (activeGroupId) fetchGroupDetails(activeGroupId);
+      } else {
+        alert("Failed to delete expense");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error deleting expense");
     }
   };
 
@@ -474,6 +492,12 @@ export default function Budget() {
             </svg>
             <span>Budgets</span>
           </Link>
+          <Link to="/goals" className="sidebar-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+               <path d="M12 20L18 12C18 12 21 8.5 21 6.5C21 4.01472 18.9853 2 16.5 2C14.7317 2 13.1979 3.01831 12.5 4.54275C11.8021 3.01831 10.2683 2 8.5 2C6.01472 2 4 4.01472 4 6.5C4 8.5 7 12 7 12L12 20ZM12 20V22M8 22H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span>Goals</span>
+          </Link>
           <Link to="/dashboard/transactions" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -517,31 +541,10 @@ export default function Budget() {
         <header className="budget-page-header">
           <div className="budget-header-left">
             <h1 className="budget-page-title">Budget Management</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
-              <button 
-                onClick={() => navigateMonth(-1)}
-                className="month-nav-btn"
-                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
-              >
-                &lsaquo; Prev
-              </button>
-              <button 
-                onClick={() => setSelectedMonth(new Date().toISOString().slice(0, 7))}
-                className="month-nav-btn present-btn"
-                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
-              >
-                Present
-              </button>
-              <p className="budget-page-subtitle" style={{ margin: 0, fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem', minWidth: '120px', textAlign: 'center' }}>
+            <div style={{ marginTop: '12px' }}>
+              <p className="budget-page-subtitle" style={{ margin: 0, fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem' }}>
                 {new Date(`${selectedMonth}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </p>
-              <button 
-                onClick={() => navigateMonth(1)}
-                className="month-nav-btn"
-                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
-              >
-                Next &rsaquo;
-              </button>
             </div>
           </div>
           <div className="budget-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -973,7 +976,14 @@ export default function Budget() {
 
                 {activeGroupId && (
                   <button
-                    onClick={() => setShowAddExpenseModal(true)}
+                    onClick={() => {
+                       setEditingExpenseId(null);
+                       setSplitDesc("");
+                       setSplitAmount("");
+                       setSplitPaidBy("");
+                       setSplitInvolvedMembers([]);
+                       setShowAddExpenseModal(true);
+                    }}
                     style={{
                       padding: '8px 20px',
                       background: '#6366f1',
@@ -1008,6 +1018,7 @@ export default function Budget() {
                             <th>Total Amount</th>
                             <th>Paid By</th>
                             <th>Split Among</th>
+                            <th>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1022,10 +1033,31 @@ export default function Budget() {
                               <td style={{ color: 'var(--color-gray-600)', fontSize: '0.875rem' }}>
                                 {exp.splitBetween.map((s: any) => s.member).join(', ')}
                               </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button onClick={() => {
+                                      setEditingExpenseId(exp._id);
+                                      setSplitDesc(exp.description);
+                                      setSplitAmount(exp.amount.toString());
+                                      setSplitPaidBy(exp.paidBy);
+                                      setSplitInvolvedMembers(exp.splitBetween.map((s:any)=>s.member));
+                                      setShowAddExpenseModal(true);
+                                    }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)' }} title="Edit">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                      <path d="M14 3L17 6L7 16H4V13L14 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                  </button>
+                                  <button onClick={() => handleDeleteSplitExpense(exp._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)' }} title="Delete">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                      <path d="M4 5H16M6 5V15C6 16.1046 6.89543 17 8 17H12C13.1046 17 14 16.1046 14 15V5M8 5V3C8 2.44772 8.44772 2 9 2H11C11.5523 2 12 2.44772 12 3V5M8 9V13M12 9V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
                             </tr>
                           )) : (
                             <tr>
-                              <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
+                              <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
                                 No expenses recorded for this group yet.
                               </td>
                             </tr>
@@ -1157,7 +1189,9 @@ export default function Budget() {
       {showAddExpenseModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'white', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px' }}>Add Split Expense</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px' }}>
+              {editingExpenseId ? "Edit Split Expense" : "Add Split Expense"}
+            </h2>
 
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: '#4b5563' }}>Description</label>
