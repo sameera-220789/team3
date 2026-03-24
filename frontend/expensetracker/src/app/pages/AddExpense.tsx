@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, NavLink, useNavigate, useSearchParams } from "react-router-dom";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
 import ReceiptUploader from "../components/ReceiptUploader";
@@ -24,6 +24,8 @@ export default function AddExpense() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [smsMessage, setSmsMessage] = useState("");
+  const [isSmsLoading, setIsSmsLoading] = useState(false);
 
   const getCategoryEmoji = (cat: string) => {
     switch (cat) {
@@ -229,6 +231,38 @@ export default function AddExpense() {
     }
   };
 
+  const handleSmsDetect = async () => {
+    if (!smsMessage.trim()) return;
+    setIsSmsLoading(true);
+    try {
+      const user = getUser();
+      if (!user) {
+        alert("Please login first");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/expenses/auto-detect-sms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, message: smsMessage })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert(`Successfully auto-detected and added ${data.type === 'income' ? 'Income' : 'Expense'} of ₹${data.amount}`);
+        setSmsMessage("");
+        await fetchRecentExpenses(); // Dynamic update without refresh
+      } else {
+        alert(`Failed to parse SMS: ${data.message}`);
+      }
+    } catch (error) {
+       alert("Network error processing SMS");
+       console.error(error);
+    } finally {
+       setIsSmsLoading(false);
+    }
+  };
+
   return (
     <div className="dashboard-page">
       {/* Sidebar */}
@@ -255,6 +289,18 @@ export default function AddExpense() {
             </svg>
             <span>Dashboard</span>
           </Link>
+          <NavLink
+            to="/dashboard/make-payment"
+            className={({ isActive }) =>
+              `sidebar-link${isActive ? " active" : ""}`
+            }
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+            <span>Make Payment</span>
+          </NavLink>
           <Link to="/add-expense" className="sidebar-link active">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -345,6 +391,29 @@ export default function AddExpense() {
           <div className="expense-layout">
             {/* Left: Expense Form */}
             <div className="expense-form-container">
+              {/* Smart SMS Paste Section */}
+              <div className="card sms-paste-card" style={{ marginBottom: '20px', padding: '16px', borderLeft: '4px solid var(--color-primary)', background: 'var(--color-surface)', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-gray-800)', margin: 0 }}>Smart Auto-Detect (SMS Paste) 🤖</h3>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={smsMessage}
+                    onChange={(e) => setSmsMessage(e.target.value)}
+                    placeholder="Paste bank SMS (e.g., 'Rs.500 debited at Swiggy')"
+                    disabled={isSmsLoading}
+                    style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none', background: 'var(--color-background)', fontSize: '14px' }}
+                  />
+                  <button 
+                    onClick={handleSmsDetect}
+                    disabled={isSmsLoading || !smsMessage.trim()}
+                    style={{ padding: '0 20px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: (isSmsLoading || !smsMessage.trim()) ? 'not-allowed' : 'pointer', opacity: (isSmsLoading || !smsMessage.trim()) ? 0.7 : 1 }}
+                  >
+                    {isSmsLoading ? "Detecting..." : "Auto-Add"}
+                  </button>
+                </div>
+              </div>
               {showReceiptScanner ? (
                 <ReceiptUploader
                   onExtracted={async (data: any) => {
@@ -645,9 +714,10 @@ export default function AddExpense() {
                   return eDate === today;
                 });
                 
-                const todayTotal = todaysExpenses.reduce((sum, e) => sum + e.amount, 0);
+                const totalSpent = todaysExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
+                const totalIncome = todaysExpenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
                 
-                const categoryTotals = todaysExpenses.reduce((acc, e) => {
+                const categoryTotals = todaysExpenses.filter(e => e.type !== 'income').reduce((acc, e) => {
                   acc[e.category] = (acc[e.category] || 0) + e.amount;
                   return acc;
                 }, {} as Record<string, number>);
@@ -665,9 +735,17 @@ export default function AddExpense() {
                     <div className="summary-stats">
                       <div className="summary-stat">
                         <span className="summary-label">Total Spent</span>
-                        <span className="summary-value primary">{currentUser?.currency === 'USD' ? '$' : '₹'}{todayTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-
+                        <span className="summary-value primary">{currentUser?.currency === 'USD' ? '$' : '₹'}{totalSpent.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                       </div>
+                      {totalIncome > 0 && (
+                        <>
+                          <div className="summary-divider"></div>
+                          <div className="summary-stat">
+                            <span className="summary-label">Income Received</span>
+                            <span className="summary-value" style={{ color: 'var(--color-success)' }}>{currentUser?.currency === 'USD' ? '$' : '₹'}{totalIncome.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="summary-divider"></div>
                       <div className="summary-stat">
                         <span className="summary-label">Transactions</span>
@@ -710,9 +788,11 @@ export default function AddExpense() {
                         <div className={`transaction-icon ${getTheme(exp.category)}`}>{getEmoji(exp.category)}</div>
                         <div className="transaction-details">
                           <p className="transaction-name">{exp.description ? String(exp.description) : `${String(exp.category)} expense`}</p>
-                          <p className="transaction-time">{new Date(exp.date || exp.createdAt).toLocaleDateString()}</p>
+                          <p className="transaction-time">{new Date(exp.date || exp.createdAt).toLocaleDateString()} {exp.type === 'income' && <span style={{fontSize: '10px', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px', fontWeight: 'bold'}}>INCOME</span>}</p>
                         </div>
-                        <span className="transaction-amount">{currentUser?.currency === 'USD' ? '$' : '₹'}{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                        <span className="transaction-amount" style={{ color: exp.type === 'income' ? 'var(--color-success)' : 'inherit' }}>
+                          {exp.type === 'income' ? '+' : ''}{currentUser?.currency === 'USD' ? '$' : '₹'}{exp.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </span>
                         <div className="transaction-actions" style={{display: 'flex', gap: '8px', marginLeft: '8px'}}>
                           <button onClick={() => handleEdit(exp)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)'}} title="Edit">✏️</button>
                           <button onClick={() => handleDelete(exp._id)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)'}} title="Delete">🗑️</button>
@@ -727,7 +807,7 @@ export default function AddExpense() {
 
               {/* Budget Alert (Dynamic logic) */}
               {(() => {
-                const totalSpent = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
+                const totalSpent = recentExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
                 const totalBudgetDoc = budgets.find((b: any) => b.category === 'total');
                 const totalBudget = totalBudgetDoc ? totalBudgetDoc.limit : 0;
                 const utilization = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;

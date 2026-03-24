@@ -84,6 +84,14 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
+  /* Payment App Specific Tokens */
+  --pay-primary: #5f259f;
+  --pay-primary-light: #7b36c7;
+  --pay-bg: #f4f6f8;
+  --pay-surface: #ffffff;
+  --pay-text-header: #1f2937;
+  --pay-text-sub: #6b7280;
+  --pay-border: #e5e7eb;
 }
 
 /* ==========================================================================
@@ -101,6 +109,14 @@
   --color-gray-700: #e5e7eb;
   --color-gray-800: #f3f4f6;
   --color-gray-900: #f9fafb;
+
+  /* Payment App Dark Overrides */
+  --pay-bg: #121212;
+  --pay-surface: #1e1e1e;
+  --pay-text-header: #f9fafb;
+  --pay-text-sub: #a3a3a3;
+  --pay-border: #333333;
+  --pay-primary-light: #9333ea;
 }
 
 .dark body {

@@ -161,7 +161,26 @@ exports.getProfile = async (req, res) => {
       memberSince: user.createdAt
     });
   } catch (error) {
-    console.error("Get profile error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { userId, totalSavings } = req.body;
+    if (!userId) return res.status(400).json({ message: "userId is required" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (totalSavings !== undefined) {
+      user.totalSavings = Number(totalSavings);
+    }
+
+    await user.save();
+    res.json({ message: "Profile updated successfully", totalSavings: user.totalSavings });
+  } catch (error) {
+    console.error("Update profile error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
