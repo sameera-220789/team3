@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema({
   totalSavings: {
     type: Number,
     default: 0
+  },
+  role: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user"
   }
 }, { timestamps: true });
 
