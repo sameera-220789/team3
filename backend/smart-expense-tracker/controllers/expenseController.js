@@ -272,8 +272,13 @@ exports.deleteExpense = async (req, res) => {
 // Auto Add Expense (from Demo Payment App)
 exports.autoAddExpense = async (req, res) => {
   try {
-    const { userId, amount, description, source } = req.body;
-    let { category } = req.body;
+    const { amount, description, source } = req.body;
+    let { category, userId } = req.body;
+
+    // Use userId from body OR from authenticated token (req.user)
+    if (!userId && req.user) {
+      userId = req.user.userId;
+    }
     
     const expenseAmount = Number(amount);
     if (isNaN(expenseAmount) || expenseAmount <= 0) {
