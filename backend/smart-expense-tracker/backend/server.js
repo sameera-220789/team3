@@ -118,11 +118,14 @@ const adminRoutes = require("../routes/adminRoutes");
 const recurringRoutes = require("../routes/recurringRoutes");
 const { checkReminders } = require("../services/reminderService");
 
+const { getFinancialHealthScore } = require("../controllers/reportController");
+
 app.use("/api/auth", authRoutes);
 app.use("/auth", oauthRoutes); 
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/reports", reportRoutes);
+app.get("/api/financial-health-score", getFinancialHealthScore);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/receipts", receiptRoutes);
