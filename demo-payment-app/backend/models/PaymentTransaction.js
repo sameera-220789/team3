@@ -2,8 +2,7 @@ const mongoose = require("mongoose");
 
 const paymentTransactionSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    type: String, // Can be ObjectId string or "demo"
     required: true
   },
   amount: {
@@ -29,20 +28,6 @@ const paymentTransactionSchema = new mongoose.Schema({
   bankDetails: {
     type: String,
     default: ""
-  },
-  paymentMode: {
-    type: String,
-    enum: ["mobile", "bank", "qr"],
-    default: "mobile"
-  },
-  status: {
-    type: String,
-    enum: ["success", "failed", "pending"],
-    default: "success"
-  },
-  expenseId: {
-    type: String,          // ID of the auto-generated expense in the Expense Tracker
-    default: null
   },
   timestamp: {
     type: Date,

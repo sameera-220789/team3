@@ -114,8 +114,8 @@ const groupRoutes = require("../routes/groupRoutes");
 const receiptRoutes = require("../routes/receiptRoutes");
 const goalRoutes = require("../routes/goalRoutes");
 const adminRoutes = require("../routes/adminRoutes");
-const recurringRoutes = require("../routes/recurringRoutes");
-const { checkReminders } = require("../services/reminderService");
+// const recurringRoutes = require("../routes/recurringRoutes");
+// const { checkReminders } = require("../services/reminderService");
 
 const { getFinancialHealthScore } = require("../controllers/reportController");
 
@@ -130,15 +130,15 @@ app.use("/api/groups", groupRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/recurring", recurringRoutes);
+// app.use("/api/recurring", recurringRoutes);
 
 // Recurring Bill Reminders Service (check every 15 mins)
-setInterval(() => {
-  console.log("Checking for bill reminders...");
-  checkReminders();
-}, 15 * 60 * 1000);
-// Also run once on startup
-checkReminders();
+// setInterval(() => {
+//   console.log("Checking for bill reminders...");
+//   checkReminders();
+// }, 15 * 60 * 1000);
+// // Also run once on startup
+// checkReminders();
 
 // Static folder for uploads
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
