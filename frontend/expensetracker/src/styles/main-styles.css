@@ -92,6 +92,12 @@
   --pay-text-header: #1f2937;
   --pay-text-sub: #6b7280;
   --pay-border: #e5e7eb;
+
+  /* Additional Theme Variables */
+  --color-background: #ffffff;
+  --color-border: #e5e7eb;
+  --color-muted: #f3f4f6;
+  --color-accent: #6366f1;
 }
 
 /* ==========================================================================
@@ -117,6 +123,12 @@
   --pay-text-sub: #a3a3a3;
   --pay-border: #333333;
   --pay-primary-light: #9333ea;
+  
+  /* Additional Theme Variables - Dark Mode */
+  --color-background: #1e1e1e;
+  --color-border: #2a2a2a;
+  --color-muted: #2a2a2a;
+  --color-accent: #818cf8;
 }
 
 .dark body {
@@ -1786,6 +1798,13 @@ h1, h2, h3, h4, h5, h6 {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-8);
+}
+
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-5);
   margin-bottom: var(--space-8);
 }
