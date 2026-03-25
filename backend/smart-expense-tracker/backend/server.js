@@ -113,7 +113,6 @@ const alertRoutes = require("../routes/alertRoutes");
 const groupRoutes = require("../routes/groupRoutes");
 const receiptRoutes = require("../routes/receiptRoutes");
 const goalRoutes = require("../routes/goalRoutes");
-const paymentRoutes = require("../routes/paymentRoutes");
 const adminRoutes = require("../routes/adminRoutes");
 const recurringRoutes = require("../routes/recurringRoutes");
 const { checkReminders } = require("../services/reminderService");
@@ -130,7 +129,6 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/goals", goalRoutes);
-app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/recurring", recurringRoutes);
 

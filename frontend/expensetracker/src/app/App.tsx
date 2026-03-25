@@ -11,7 +11,6 @@ import Dashboard, {
 import Budget from "./pages/Budget";
 import Goals from "./pages/Goals";
 import AddExpense from "./pages/AddExpense";
-import MakePayment from "./pages/MakePayment";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import AdminOverview from "./pages/AdminOverview";
@@ -39,7 +38,6 @@ export function App() {
           <Route index element={<DashboardOverview />} />
           <Route path="transactions" element={<DashboardTransactions />} />
           <Route path="reports" element={<DashboardReports />} />
-          <Route path="make-payment" element={<MakePayment />} />
         </Route>
         <Route path="/budget" element={<Budget />} />
         <Route path="/goals" element={<Goals />} />

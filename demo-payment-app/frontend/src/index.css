@@ -1,0 +1,306 @@
+/* ─── CSS Reset & Design Tokens ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary:        #5f259f;
+  --primary-light:  #7b36c7;
+  --primary-dark:   #3d1467;
+  --success:        #10b981;
+  --danger:         #ef4444;
+  --warning:        #f59e0b;
+  --bg:             #f4f0fb;
+  --surface:        #ffffff;
+  --border:         #e5e7eb;
+  --text:           #1f2937;
+  --text-muted:     #6b7280;
+  --radius:         12px;
+  --shadow:         0 4px 20px rgba(95,37,159,0.12);
+  --shadow-sm:      0 2px 8px rgba(0,0,0,0.06);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text);
+}
+
+body { background: var(--bg); min-height: 100vh; }
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--bg);
+  position: relative;
+}
+
+/* ─── Top Nav Bar ─────────────────────────────────────────────────────────── */
+.topbar {
+  background: var(--primary);
+  color: white;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(95,37,159,0.3);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-logo {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.topbar-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px; }
+.topbar-sub   { font-size: 0.7rem; opacity: 0.75; }
+
+/* ─── Bottom Tab Bar ──────────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  z-index: 50;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+.tab-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer;
+  padding: 6px 0; font-size: 11px; font-weight: 600;
+  color: var(--text-muted); transition: color 0.15s;
+}
+.tab-btn.active { color: var(--primary); }
+.tab-btn svg { transition: color 0.15s; }
+
+/* ─── Page Content ────────────────────────────────────────────────────────── */
+.page-content { flex: 1; padding: 20px; padding-bottom: 80px; }
+
+/* ─── Cards ───────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+.card + .card { margin-top: 16px; }
+
+/* ─── Profile Widget ──────────────────────────────────────────────────────── */
+.profile-widget {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.profile-widget .label { font-size: 11px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; }
+.profile-widget .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+.profile-widget .row { display: flex; justify-content: space-between; align-items: center; }
+
+/* ─── Pay Mode Grid ───────────────────────────────────────────────────────── */
+.mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+.mode-btn {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 18px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.mode-btn:hover { border-color: var(--primary); box-shadow: 0 4px 14px rgba(95,37,159,0.15); transform: translateY(-2px); }
+.mode-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: #f3e8ff; display: flex; align-items: center; justify-content: center;
+  color: var(--primary);
+}
+.mode-label { font-size: 12px; font-weight: 600; color: var(--text); text-align: center; line-height: 1.4; }
+
+/* ─── Form Inputs ─────────────────────────────────────────────────────────── */
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+.field input, .field select, .field textarea {
+  width: 100%; padding: 12px 14px;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  font-size: 15px; font-family: inherit; background: var(--surface); color: var(--text);
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--primary); }
+
+/* ─── Big Amount Input ────────────────────────────────────────────────────── */
+.amount-wrapper { text-align: center; padding: 30px 0 20px; }
+.amount-symbol { font-size: 36px; font-weight: 700; color: var(--text-muted); line-height: 1; }
+.amount-input {
+  font-size: 56px; font-weight: 800; color: var(--text);
+  border: none; outline: none; background: transparent;
+  width: 200px; text-align: center;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  width: 100%; padding: 16px; border: none; border-radius: 12px;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+}
+.btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 14px rgba(95,37,159,0.35); }
+.btn-primary:hover { background: var(--primary-light); transform: translateY(-1px); }
+.btn-primary:disabled { background: #d1d5db; color: #9ca3af; box-shadow: none; cursor: not-allowed; transform: none; }
+.btn-success { background: var(--success); color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+.btn-ghost { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+.btn-sm { padding: 10px 16px; font-size: 14px; border-radius: 8px; width: auto; }
+.btn-back {
+  background: none; border: none; cursor: pointer; color: white;
+  display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500;
+}
+
+/* ─── PIN Pad ─────────────────────────────────────────────────────────────── */
+.pin-dots { display: flex; gap: 14px; justify-content: center; margin: 24px 0 36px; }
+.pin-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--border); background: transparent; transition: all 0.15s;
+}
+.pin-dot.filled { background: var(--text); border-color: var(--text); }
+
+.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 280px; margin: 0 auto; }
+.pin-key {
+  width: 68px; height: 68px; border-radius: 50%; margin: auto;
+  border: 1.5px solid var(--border); background: var(--surface);
+  font-size: 24px; font-weight: 500; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-sm); transition: all 0.15s;
+}
+.pin-key:hover { border-color: var(--primary); background: #f3e8ff; }
+
+/* ─── Processing Screen ───────────────────────────────────────────────────── */
+.processing-screen {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  gap: 16px; background: var(--primary); color: white; padding: 40px 20px;
+}
+.spinner-ring {
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.25); border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Success Screen ──────────────────────────────────────────────────────── */
+.success-screen {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 32px 20px;
+  gap: 0; background: var(--bg);
+}
+.success-card { background: var(--surface); border-radius: 20px; padding: 36px 24px; text-align: center; box-shadow: var(--shadow); max-width: 380px; width: 100%; }
+.success-icon {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--success); color: white;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px; animation: pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
+}
+@keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.success-amount { font-size: 2rem; font-weight: 800; margin-bottom: 4px; }
+.success-label { color: var(--text-muted); font-size: 14px; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+.receipt-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; }
+.receipt-row .key { color: var(--text-muted); }
+.receipt-row .val { font-weight: 600; }
+.category-badge {
+  background: linear-gradient(135deg, #4338ca, #6366f1); color: white;
+  border-radius: 12px; padding: 14px 20px; margin-top: 20px; text-align: center;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+}
+.category-badge .badge-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+.category-badge .badge-value { font-size: 16px; font-weight: 700; margin-top: 4px; }
+
+/* ─── Error Box ───────────────────────────────────────────────────────────── */
+.error-box {
+  background: #fef2f2; color: #dc2626;
+  padding: 12px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; margin-bottom: 16px;
+}
+
+/* ─── No Auth Banner ──────────────────────────────────────────────────────── */
+.no-auth {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 80vh; text-align: center; gap: 16px; padding: 32px;
+}
+.no-auth h2 { font-size: 1.3rem; color: var(--text); }
+.no-auth p  { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+.no-auth a  {
+  display: inline-block; padding: 12px 24px;
+  background: var(--primary); color: white; border-radius: 10px;
+  font-weight: 600; text-decoration: none; margin-top: 8px;
+}
+
+/* ─── History List ────────────────────────────────────────────────────────── */
+.history-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+}
+.history-item:last-child { border-bottom: none; }
+.history-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--primary); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; flex-shrink: 0;
+}
+.history-info { flex: 1; min-width: 0; }
+.history-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.history-amount { font-weight: 700; font-size: 15px; color: var(--danger); white-space: nowrap; }
+.category-pill {
+  display: inline-block; font-size: 10px; font-weight: 600;
+  padding: 2px 8px; border-radius: 20px;
+  background: #f3e8ff; color: var(--primary); margin-top: 3px;
+}
+
+/* ─── Contacts Row ────────────────────────────────────────────────────────── */
+.contacts-row { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 4px; margin: 16px 0; }
+.contacts-row::-webkit-scrollbar { display: none; }
+.contact-chip {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; flex-shrink: 0;
+}
+.contact-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; }
+.contact-name { font-size: 11px; font-weight: 500; color: var(--text-muted); text-align: center; max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ─── Bank Row ────────────────────────────────────────────────────────────── */
+.bank-row {
+  background: var(--surface); border-radius: 12px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: var(--shadow-sm); margin: 16px 0;
+}
+.bank-icon { padding: 10px; background: #f3f4f6; border-radius: 8px; }
+.bank-meta { flex: 1; }
+.bank-name { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.bank-acno { font-size: 15px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+/* ─── QR Scan ─────────────────────────────────────────────────────────────── */
+.qr-box {
+  background: #000; border-radius: 16px; height: 300px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.qr-frame { width: 200px; height: 200px; border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; position: relative; }
+.qr-scan-line {
+  position: absolute; left: 0; right: 0; height: 3px;
+  background: var(--success); box-shadow: 0 0 10px var(--success);
+  animation: scanLine 2s linear infinite;
+}
+@keyframes scanLine { 0% { top: 0; } 50% { top: calc(100% - 3px); } 100% { top: 0; } }
+.qr-text { color: white; margin-top: 20px; font-weight: 500; }
+
+/* ─── Utilities ───────────────────────────────────────────────────────────── */
+.mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; }
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); font-size: 13px; }
+.section-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
