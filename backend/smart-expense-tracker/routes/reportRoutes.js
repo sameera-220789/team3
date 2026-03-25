@@ -6,9 +6,13 @@ const {
   getSpendingInsights,
   getMonthlyReport,
   downloadPDF,
-  downloadCSV
+  downloadCSV,
+  getFinancialHealthScore
 } = require("../controllers/reportController");
 const Expense = require("../models/Expense");
+
+// Financial Health Score
+router.get("/financial-health-score", getFinancialHealthScore);
 
 // Total Expense Report
 router.get("/total", getTotalReport);
