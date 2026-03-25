@@ -585,7 +585,7 @@ export function DashboardOverview() {
         </div>
       )}
       {/* Stats Grid */}
-      <div className="stats-grid">
+      <div className="dashboard-stats-grid">
             {/* Total Budget Card (New) */}
             <div className="stat-card full-width" style={totalBudgetLimit === 0 ? { border: '2px dashed var(--color-primary)', background: 'var(--color-primary-light)', opacity: 0.8 } : {}}>
               <div className="stat-header">
