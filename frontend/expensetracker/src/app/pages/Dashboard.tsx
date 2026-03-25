@@ -734,20 +734,24 @@ export function DashboardOverview() {
 
             <div className="stat-card">
               <div className="stat-header">
-                <div className="stat-icon-wrapper green">
+                <div className={`stat-icon-wrapper ${unallocatedBudget < 0 ? 'red' : 'green'}`}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                     <path d="M19 9L12 3L5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                     <rect x="5" y="9" width="14" height="12" rx="1" stroke="currentColor" strokeWidth="2" />
                   </svg>
                 </div>
-                <span className="stat-label">Category Allocated</span>
+                <span className="stat-label">Unallocated Budget</span>
               </div>
 
-              <p className="stat-value">₹{totalCategoryBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+              <p className="stat-value" style={{ color: unallocatedBudget < 0 ? '#ef4444' : undefined }}>
+                {unallocatedBudget < 0 ? '-' : ''}₹{Math.abs(unallocatedBudget).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+              </p>
 
               <div className="stat-footer">
-                <span className="stat-period">₹{unallocatedBudget.toLocaleString('en-IN')} unallocated</span>
+                <span className="stat-period" style={{ color: unallocatedBudget < 0 ? '#ef4444' : undefined }}>
+                  ₹{totalCategoryBudget.toLocaleString('en-IN')} allocated to categories
+                </span>
               </div>
             </div>
       </div>
