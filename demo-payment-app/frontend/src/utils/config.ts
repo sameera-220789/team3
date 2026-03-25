@@ -4,12 +4,12 @@ export const EXPENSE_TRACKER_URL = 'http://localhost:5000';
 
 /** Read JWT token that was set by the Expense Tracker on login */
 export function getToken(): string | null {
-  return localStorage.getItem('token');
+  return sessionStorage.getItem('token');
 }
 
 /** Decode the user object from the JWT payload (no verify, client-side only) */
 export function getUser(): { id: string; firstName?: string; lastName?: string; email?: string } | null {
-  const raw = localStorage.getItem('user');
+  const raw = sessionStorage.getItem('user');
   if (raw) {
     try { return JSON.parse(raw); } catch { /* fall through */ }
   }

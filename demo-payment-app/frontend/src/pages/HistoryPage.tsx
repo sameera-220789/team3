@@ -32,15 +32,6 @@ export default function HistoryPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  if (!token) return (
-    <div className="no-auth">
-      <div style={{ fontSize:40 }}>🔐</div>
-      <h2>Not Logged In</h2>
-      <p>Log into the Expense Tracker to access your payment history.</p>
-      <a href="http://localhost:5173/login" target="_blank" rel="noopener noreferrer">Log In ↗</a>
-    </div>
-  );
-
   const total = txns.reduce((s, t) => s + t.amount, 0);
 
   return (

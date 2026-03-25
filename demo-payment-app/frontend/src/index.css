@@ -13,11 +13,25 @@
   --border:         #e5e7eb;
   --text:           #1f2937;
   --text-muted:     #6b7280;
-  --radius:         12px;
-  --shadow:         0 4px 20px rgba(95,37,159,0.12);
-  --shadow-sm:      0 2px 8px rgba(0,0,0,0.06);
-  font-family: 'Inter', system-ui, sans-serif;
+  --radius:         16px;
+  --radius-lg:      24px;
+  --shadow:         0 10px 25px -5px rgba(95,37,159,0.15), 0 8px 10px -6px rgba(95,37,159,0.1);
+  --shadow-sm:      0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg:      0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
   color: var(--text);
+  color-scheme: light;
+}
+
+:root.dark {
+  --bg:             #0f0b1a;
+  --surface:        #1c142c;
+  --border:         #2d2445;
+  --text:           #f3f4f6;
+  --text-muted:     #9ca3af;
+  --shadow:         0 4px 20px rgba(0,0,0,0.4);
+  --shadow-sm:      0 2px 8px rgba(0,0,0,0.3);
+  color-scheme: dark;
 }
 
 body { background: var(--bg); min-height: 100vh; }
@@ -26,11 +40,13 @@ body { background: var(--bg); min-height: 100vh; }
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   max-width: 480px;
   margin: 0 auto;
   background: var(--bg);
   position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0,0,0,0.1);
 }
 
 /* ─── Top Nav Bar ─────────────────────────────────────────────────────────── */
@@ -82,7 +98,20 @@ body { background: var(--bg); min-height: 100vh; }
 .tab-btn svg { transition: color 0.15s; }
 
 /* ─── Page Content ────────────────────────────────────────────────────────── */
-.page-content { flex: 1; padding: 20px; padding-bottom: 80px; }
+.page-content { 
+  flex: 1; 
+  padding: 0; 
+  overflow-y: auto; 
+  scrollbar-width: none; 
+  display: flex;
+  flex-direction: column;
+}
+.page-content::-webkit-scrollbar { display: none; }
+
+.scroll-container {
+  padding: 24px 20px 140px;
+  flex: 1;
+}
 
 /* ─── Cards ───────────────────────────────────────────────────────────────── */
 .card {
@@ -131,6 +160,7 @@ body { background: var(--bg); min-height: 100vh; }
   font-size: 15px; font-family: inherit; background: var(--surface); color: var(--text);
   transition: border-color 0.15s;
   -webkit-appearance: none;
+  appearance: none;
 }
 .field input:focus, .field select:focus { outline: none; border-color: var(--primary); }
 

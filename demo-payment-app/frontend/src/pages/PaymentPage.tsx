@@ -4,14 +4,14 @@ import { PAYMENT_API, EXPENSE_TRACKER_URL, getUser } from "../utils/config";
 
 // Modern UI theme definitions
 const THEME = {
-  primary: "#111827", // sleek dark blue
-  primaryLight: "#1F2937",
-  success: "#10b981", // emerald green
-  background: "#F9FAFB",
-  surface: "#FFFFFF",
-  textHeader: "#111827",
-  textSub: "#6B7280",
-  border: "#E5E7EB",
+  primary: "var(--primary)",
+  primaryLight: "var(--primary-light)",
+  success: "var(--success)",
+  background: "var(--bg)",
+  surface: "var(--surface)",
+  textHeader: "var(--text)",
+  textSub: "var(--text-muted)",
+  border: "var(--border)",
 };
 
 interface SenderProfile {
@@ -208,26 +208,35 @@ export default function PaymentPage() {
   // ------------------------------------------------------------------
   if (step === "setup") {
     return (
-      <div style={{ minHeight: '80vh', backgroundColor: THEME.background }}>
-        <header style={{ backgroundColor: THEME.primary, padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 600 }}>Link Bank Account</h1>
+      <div className="page-content">
+        <header className="topbar">
+          <button onClick={() => senderProfile ? setStep("select") : null} style={{ background: 'none', border: 'none', color: 'white', cursor: senderProfile ? 'pointer' : 'default', padding: 0, opacity: senderProfile ? 1 : 0 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <div className="topbar-title">{senderProfile ? "Edit Account" : "Link Bank"}</div>
           <ThemeToggle />
         </header>
 
-        <div style={{ maxWidth: '450px', margin: '30px auto', padding: '0 20px' }}>
-          <p style={{ color: THEME.textSub, fontSize: '14px', marginBottom: '20px', textAlign: 'center' }}>To send money dynamically, please link your bank account and set a UPI PIN for this demo app.</p>
+        <div className="scroll-container">
+          <div className="card" style={{ marginBottom: '24px', textAlign: 'center' }}>
+            <div style={{ width: '60px', height: '60px', borderRadius: '18px', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '24px', boxShadow: 'var(--shadow)' }}>
+               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Setup Payment ID</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Link your bank to enable seamless one-click transfers.</p>
+          </div>
           
-          <form onSubmit={handleSetupSubmit} style={{ backgroundColor: THEME.surface, borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-            {error && <div style={{ color: '#DC2626', backgroundColor: '#FEE2E2', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
+          <form onSubmit={handleSetupSubmit} className="card" style={{ padding: '24px' }}>
+            {error && <div className="error-box">{error}</div>}
             
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>Your Phone Number</label>
-              <input type="text" value={setupPhone} onChange={e => setSetupPhone(e.target.value)} style={{ width: '100%', padding: '12px', border: `1px solid ${THEME.border}`, borderRadius: '8px', fontSize: '15px' }} placeholder="e.g. 9876543210" required />
+            <div className="field">
+              <label>Phone Number</label>
+              <input type="text" value={setupPhone} onChange={e => setSetupPhone(e.target.value)} placeholder="9876543210" required />
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>Select Bank</label>
-              <select value={setupBank} onChange={e => setSetupBank(e.target.value)} style={{ width: '100%', padding: '12px', border: `1px solid ${THEME.border}`, borderRadius: '8px', fontSize: '15px' }}>
+            <div className="field">
+              <label>Link Bank</label>
+              <select value={setupBank} onChange={e => setSetupBank(e.target.value)}>
                 <option value="HDFC Bank">HDFC Bank</option>
                 <option value="SBI Bank">SBI Bank</option>
                 <option value="ICICI Bank">ICICI Bank</option>
@@ -235,22 +244,24 @@ export default function PaymentPage() {
               </select>
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>Last 4 Digits of Account</label>
-              <input type="text" maxLength={4} value={setupAccNo} onChange={e => setSetupAccNo(e.target.value)} style={{ width: '100%', padding: '12px', border: `1px solid ${THEME.border}`, borderRadius: '8px', fontSize: '15px' }} placeholder="e.g. 1234" required />
+            <div className="field">
+              <label>Last 4 Digits of A/C</label>
+              <input type="text" maxLength={4} value={setupAccNo} onChange={e => setSetupAccNo(e.target.value)} placeholder="1234" required />
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>Initial Bank Balance (₹)</label>
-              <input type="number" value={setupBalance} onChange={e => setSetupBalance(e.target.value)} style={{ width: '100%', padding: '12px', border: `1px solid ${THEME.border}`, borderRadius: '8px', fontSize: '15px' }} placeholder="e.g. 50000" required />
+            <div className="field">
+              <label>Initial Balance (₹)</label>
+              <input type="number" value={setupBalance} onChange={e => setSetupBalance(e.target.value)} placeholder="50000" required />
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-               <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>Set 4-Digit UPI PIN</label>
-               <input type="password" maxLength={4} value={setupPin} onChange={e => setSetupPin(e.target.value)} style={{ width: '100%', padding: '12px', border: `1px solid ${THEME.border}`, borderRadius: '8px', fontSize: '15px', letterSpacing: '8px', textAlign: 'center' }} placeholder="****" required />
+            <div className="field">
+               <label>Set 4-Digit UPI PIN</label>
+               <input type="password" maxLength={4} value={setupPin} onChange={e => setSetupPin(e.target.value)} style={{ letterSpacing: '8px', textAlign: 'center', fontSize: '20px' }} placeholder="****" required />
             </div>
 
-            <button type="submit" style={{ width: '100%', padding: '16px', backgroundColor: THEME.primary, color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>Generate Payment Profile</button>
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '10px' }}>
+              {senderProfile ? "Save Changes" : "Create Profile"}
+            </button>
           </form>
         </div>
       </div>
@@ -262,80 +273,79 @@ export default function PaymentPage() {
   // ------------------------------------------------------------------
   if (step === "select" && senderProfile) {
     return (
-      <div style={{ minHeight: '80vh', backgroundColor: THEME.background }}>
-        <header style={{ backgroundColor: THEME.primary, padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 600 }}>Transfer Money</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="page-content">
+        <header className="topbar">
+          <div className="topbar-brand">
+            <div className="topbar-logo">💜</div>
+            <div className="topbar-title">Demo Pay</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ThemeToggle />
-            <button onClick={handleResetProfile} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Reset Setup</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setStep("setup")} style={{ border: '1px solid rgba(255,255,255,0.3)', color: 'white' }}>Edit</button>
           </div>
         </header>
 
-        {/* Sender Profile Header Widget */}
-        <div style={{ backgroundColor: THEME.primaryLight, padding: '20px', color: 'white' }}>
-           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <div>
-                <span style={{ fontSize: '12px', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Account</span>
-                <div style={{ fontSize: '16px', fontWeight: 600, marginTop: '4px' }}>{senderProfile.bank} - {senderProfile.accNo}</div>
-                <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '2px' }}>+91 {senderProfile.phone}</div>
-             </div>
-             
-             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-               <span style={{ fontSize: '12px', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Bank Balance</span>
-               {balanceVisible ? (
-                  <div style={{ fontSize: '20px', fontWeight: 'bold', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    ₹{senderProfile.balance.toLocaleString('en-IN')}
-                    <button onClick={() => setBalanceVisible(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>
-                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                    </button>
-                  </div>
-               ) : checkingBalance ? (
-                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input type="password" value={balancePin} onChange={e => setBalancePin(e.target.value)} maxLength={4} style={{ width: '60px', padding: '4px 8px', borderRadius: '4px', border: 'none', textAlign: 'center', letterSpacing: '4px' }} placeholder="PIN" autoFocus />
-                    <button onClick={() => { if (balancePin === senderProfile.upiPin) { setBalanceVisible(true); setCheckingBalance(false); setBalancePin(""); } else { alert("Incorrect PIN"); setBalancePin(""); } }} style={{ background: 'white', color: THEME.primary, border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>GO</button>
-                    <button onClick={() => { setCheckingBalance(false); setBalancePin(""); }} style={{ background: 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>✕</button>
-                  </div>
-               ) : (
-                  <button onClick={() => setCheckingBalance(true)} style={{ marginTop: '8px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', padding: '6px 12px', borderRadius: '16px', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>Check Balance</button>
-               )}
-             </div>
-           </div>
-        </div>
-
-        <div style={{ maxWidth: '450px', margin: '20px auto', padding: '0 20px' }}>
-          <h2 style={{ fontSize: '1rem', color: THEME.textSub, marginBottom: '15px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Send Money To</h2>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-            <button 
-              onClick={() => { setPaymentMode("mobile"); setStep("details"); }}
-              style={{ backgroundColor: THEME.surface, border: '1px solid ' + THEME.border, borderRadius: '12px', padding: '20px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
-            >
-              <div style={{ background: '#F3E8FF', padding: '14px', borderRadius: '50%', color: THEME.primary }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: THEME.textHeader }}>To Mobile<br/>Number</span>
-            </button>
-            
-            <button 
-              onClick={() => { setPaymentMode("bank"); setStep("details"); }}
-              style={{ backgroundColor: THEME.surface, border: '1px solid ' + THEME.border, borderRadius: '12px', padding: '20px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
-            >
-              <div style={{ background: '#F3E8FF', padding: '14px', borderRadius: '50%', color: THEME.primary }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: THEME.textHeader }}>To Bank /<br/>UPI ID</span>
-            </button>
-
-            <button 
-              onClick={handleScanClick}
-              style={{ backgroundColor: THEME.surface, border: '1px solid ' + THEME.border, borderRadius: '12px', padding: '20px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
-            >
-              <div style={{ background: '#F3E8FF', padding: '14px', borderRadius: '50%', color: THEME.primary }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
-              </div>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: THEME.textHeader }}>Scan QR<br/>Code</span>
-            </button>
+        <div className="scroll-container">
+          <div className="profile-widget">
+            <div className="row">
+               <div>
+                  <div className="label">Linked Account</div>
+                  <div className="value">{senderProfile.bank} • {senderProfile.accNo}</div>
+               </div>
+               <div style={{ textAlign: 'right' }}>
+                  <div className="label">Balance</div>
+                  {balanceVisible ? (
+                    <div className="value" style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                      ₹{senderProfile.balance.toLocaleString('en-IN')}
+                      <button onClick={() => setBalanceVisible(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                      </button>
+                    </div>
+                  ) : checkingBalance ? (
+                    <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <input type="password" value={balancePin} onChange={e => setBalancePin(e.target.value)} maxLength={4} style={{ width: '60px', padding: '4px', borderRadius: '6px', border: 'none', textAlign: 'center', color: '#000', fontWeight: 'bold' }} placeholder="PIN" autoFocus />
+                      <button onClick={() => { if (balancePin === senderProfile.upiPin) { setBalanceVisible(true); setCheckingBalance(false); setBalancePin(""); } else { alert("Incorrect PIN"); setBalancePin(""); } }} style={{ background: 'white', color: 'var(--primary)', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '11px' }}>OK</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setCheckingBalance(true)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', cursor: 'pointer', fontWeight: 600, marginTop: '4px' }}>Show</button>
+                  )}
+               </div>
+            </div>
           </div>
+
+          <div className="section-title">Transfer Options</div>
+          <div className="mode-grid">
+            <div className="mode-btn" onClick={() => { setPaymentMode("mobile"); setStep("details"); }}>
+              <div className="mode-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              </div>
+              <div className="mode-label">To Mobile</div>
+            </div>
+            <div className="mode-btn" onClick={() => { setPaymentMode("bank"); setStep("details"); }}>
+              <div className="mode-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+              </div>
+              <div className="mode-label">To Bank</div>
+            </div>
+            <div className="mode-btn" onClick={handleScanClick}>
+              <div className="mode-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <div className="mode-label">Scan QR</div>
+            </div>
+          </div>
+
+          <div className="section-title" style={{ marginTop: '24px' }}>Recent Contacts</div>
+          <div className="contacts-row">
+            {recentContacts.map(c => (
+              <div key={c.phone} className="contact-chip" onClick={() => { setPhoneNumber(c.phone); setReceiverName(c.name); setPaymentMode("mobile"); setStep("amount"); }}>
+                <div className="contact-avatar">{c.initial}</div>
+                <div className="contact-name">{c.name}</div>
+              </div>
+            ))}
+          </div>
+
+          <button className="btn btn-ghost btn-sm" onClick={handleResetProfile} style={{ marginTop: '30px', opacity: 0.6 }}>Reset App Data</button>
         </div>
       </div>
     );
@@ -346,73 +356,74 @@ export default function PaymentPage() {
   // ------------------------------------------------------------------
   if (step === "details") {
     return (
-      <div style={{ minHeight: '80vh', backgroundColor: THEME.background }}>
-        <header style={{ backgroundColor: THEME.primary, padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <button onClick={() => setStep("select")} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            </button>
-            <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 600 }}>{paymentMode === 'mobile' ? 'Send Money' : paymentMode === 'bank' ? 'Bank Transfer' : 'Scan QR'}</h1>
-          </div>
+      <div className="page-content">
+        <header className="topbar">
+          <button onClick={() => setStep("select")} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <div className="topbar-title">{paymentMode === 'mobile' ? 'Mobile Pay' : paymentMode === 'bank' ? 'Bank Transfer' : 'Scan QR'}</div>
           <ThemeToggle />
         </header>
 
-        <div style={{ maxWidth: '450px', margin: '20px auto', padding: '0 20px' }}>
+        <div className="scroll-container">
           {paymentMode === "qr" && (
-            <div style={{ backgroundColor: "black", borderRadius: "16px", height: "350px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-              <div style={{ width: "220px", height: "220px", border: "2px solid rgba(255,255,255,0.4)", borderRadius: "16px", position: "relative" }}>
-                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", backgroundColor: THEME.success, animation: "scanLine 2s linear infinite", boxShadow: '0 0 10px #10b981' }}></div>
+            <div className="card" style={{ backgroundColor: "#000", padding: '30px', height: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <div style={{ width: "220px", height: "220px", border: "2px solid rgba(255,255,255,0.4)", borderRadius: "24px", position: "relative" }}>
+                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "4px", backgroundColor: "var(--success)", animation: "scanLine 2.5s linear infinite", boxShadow: '0 0 15px var(--success)' }}></div>
               </div>
-              <p style={{ color: "white", marginTop: "24px", fontWeight: 500, fontSize: '15px' }}>Scanning QR Code...</p>
+              <p style={{ color: "white", marginTop: "32px", fontWeight: 600, fontSize: '16px', letterSpacing: '0.5px' }}>Position QR code in the frame</p>
               <style>{`@keyframes scanLine { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }`}</style>
             </div>
           )}
 
           {paymentMode !== "qr" && (
-            <form onSubmit={handleDetailsSubmit} style={{ backgroundColor: THEME.surface, borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-              {error && <div style={{ color: '#DC2626', backgroundColor: '#FEE2E2', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
+            <form onSubmit={handleDetailsSubmit} className="card" style={{ padding: '24px' }}>
+              {error && <div className="error-box">{error}</div>}
               
               {paymentMode === "mobile" && (
                 <>
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '8px', fontWeight: 600 }}>Enter Mobile Number</label>
-                    <div style={{ display: 'flex', borderBottom: `2px solid ${THEME.primary}` }}>
-                      <span style={{ fontSize: '18px', fontWeight: 600, color: THEME.textHeader, padding: '10px 8px 10px 0' }}>+91</span>
-                      <input type="text" value={phoneNumber} onChange={(e) => { setPhoneNumber(e.target.value); setReceiverName(""); }} placeholder="98765 43210" style={{ width: '100%', fontSize: '18px', fontWeight: 600, border: 'none', outline: 'none', background: 'transparent' }} autoFocus/>
+                  <div className="field" style={{ marginBottom: '32px' }}>
+                    <label>Mobile Number</label>
+                    <div style={{ display: 'flex', alignItems: 'center', borderBottom: `2.5px solid var(--primary)`, paddingBottom: '8px' }}>
+                      <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginRight: '10px' }}>+91</span>
+                      <input type="text" value={phoneNumber} onChange={(e) => { setPhoneNumber(e.target.value); setReceiverName(""); }} placeholder="00000 00000" style={{ width: '100%', fontSize: '20px', fontWeight: 700, border: 'none', outline: 'none', background: 'transparent', color: 'var(--text)' }} autoFocus/>
                     </div>
                   </div>
-                  <div>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: THEME.textSub, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Recent Transfers</span>
-                    <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {recentContacts.map(c => (
-                        <div key={c.phone} onClick={() => { setPhoneNumber(c.phone); setReceiverName(c.name); setStep("amount"); }} style={{ display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: THEME.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>{c.initial}</div>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '16px', fontWeight: 600, color: THEME.textHeader }}>{c.name}</span>
-                            <span style={{ fontSize: '13px', color: THEME.textSub }}>{c.phone}</span>
-                          </div>
+                  <button type="submit" className="btn btn-primary" style={{ marginBottom: '32px' }}>Proceed</button>
+                  
+                  <div className="section-title">Recent Payments</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {recentContacts.map(c => (
+                      <div key={c.phone} onClick={() => { setPhoneNumber(c.phone); setReceiverName(c.name); setStep("amount"); }} style={{ display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', padding: '12px', borderRadius: '12px', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(0,0,0,0.03)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '18px' }}>{c.initial}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '15px', fontWeight: 700 }}>{c.name}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{c.phone}</span>
                         </div>
-                      ))}
-                    </div>
+                        <div style={{ marginLeft: 'auto' }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </>
               )}
 
               {paymentMode === "bank" && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>Account Number</label>
-                    <input type="text" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: `2px solid ${THEME.primary}`, fontSize: '16px', fontWeight: 500, outline: 'none' }} placeholder="Enter Account Number" autoFocus/>
+                  <div className="field">
+                    <label>Account Number</label>
+                    <input type="text" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} placeholder="000000000000" autoFocus/>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>IFSC Code</label>
-                    <input type="text" value={ifsc} onChange={(e) => setIfsc(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: `2px solid ${THEME.border}`, fontSize: '16px', fontWeight: 500, outline: 'none' }} placeholder="SBIN0001234"/>
+                  <div className="field">
+                    <label>IFSC Code</label>
+                    <input type="text" value={ifsc} onChange={(e) => setIfsc(e.target.value)} placeholder="BANK0001234"/>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', color: THEME.textSub, marginBottom: '6px', fontWeight: 600 }}>Receiver Name</label>
-                    <input type="text" value={receiverName} onChange={(e) => setReceiverName(e.target.value)} style={{ width: '100%', padding: '12px 0', border: 'none', borderBottom: `2px solid ${THEME.border}`, fontSize: '16px', fontWeight: 500, outline: 'none' }} placeholder="Account Holder Name"/>
+                  <div className="field">
+                    <label>Account Holder Name</label>
+                    <input type="text" value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="Full Name"/>
                   </div>
-                  <button type="submit" style={{ marginTop: '20px', padding: '16px', backgroundColor: THEME.primary, color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>Proceed</button>
+                  <button type="submit" className="btn btn-primary" style={{ marginTop: '10px' }}>Verify & Proceed</button>
                 </div>
               )}
             </form>
@@ -427,71 +438,66 @@ export default function PaymentPage() {
   // ------------------------------------------------------------------
   if (step === "amount") {
     return (
-      <div style={{ minHeight: '80vh', backgroundColor: THEME.background }}>
-        <header style={{ backgroundColor: THEME.primary, padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <button onClick={() => setStep("details")} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'white', color: THEME.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                {(receiverName || "U")[0].toUpperCase()}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '1rem', fontWeight: 600 }}>{receiverName || phoneNumber}</span>
-                <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>{paymentMode === 'bank' ? bankAccount : (phoneNumber || 'Verified UPI')}</span>
-              </div>
-            </div>
-          </div>
+      <div className="page-content">
+        <header className="topbar">
+          <button onClick={() => setStep("details")} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <div className="topbar-title">Pay Money</div>
           <ThemeToggle />
         </header>
 
-        <div style={{ maxWidth: '450px', margin: '20px auto', padding: '0 20px' }}>
-          <div style={{ backgroundColor: THEME.surface, borderRadius: '16px', padding: '30px 20px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', textAlign: 'center' }}>
-            {error && <div style={{ color: '#DC2626', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
+        <div className="scroll-container">
+          <div className="card" style={{ textAlign: 'center', padding: '32px 24px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '24px', fontWeight: 700, boxShadow: 'var(--shadow)' }}>
+              {(receiverName || "U")[0].toUpperCase()}
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>{receiverName || phoneNumber}</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{paymentMode === 'bank' ? bankAccount : (phoneNumber || 'UPI ID Linked')}</p>
+
+            <div className="divider" style={{ margin: '30px 0' }}></div>
+
+            {error && <div className="error-box">{error}</div>}
             
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <span style={{ fontSize: '36px', fontWeight: 'bold', color: THEME.textSub, position: 'absolute', left: '-30px', top: '12px' }}>₹</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-muted)' }}>₹</span>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
-                style={{ fontSize: '56px', fontWeight: 700, width: '180px', textAlign: 'center', border: 'none', outline: 'none', color: THEME.textHeader, background: 'transparent' }}
+                style={{ fontSize: '56px', fontWeight: 800, width: '100%', maxWidth: '200px', textAlign: 'center', border: 'none', outline: 'none', color: 'var(--text)', background: 'transparent' }}
                 autoFocus
               />
             </div>
             
-            <div style={{ marginTop: '20px' }}>
-              <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note" style={{ padding: '12px 20px', borderRadius: '20px', border: '1px solid ' + THEME.border, backgroundColor: THEME.background, width: '80%', fontSize: '14px', outline: 'none', textAlign: 'center' }}/>
+            <div style={{ marginTop: '24px' }}>
+              <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What's this for? (optional)" className="field" style={{ textAlign: 'center', borderRadius: '24px', border: '1.5px solid var(--border)', padding: '12px 20px', background: 'var(--bg)', fontSize: '14px' }}/>
             </div>
           </div>
 
-          <div style={{ marginTop: '20px', backgroundColor: THEME.surface, borderRadius: '16px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ padding: '8px', backgroundColor: '#F3F4F6', borderRadius: '8px' }}>
-                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '12px', color: THEME.textSub, fontWeight: 600 }}>Paying from</span>
-                <span style={{ fontSize: '15px', fontWeight: 600, color: THEME.textHeader, marginTop: '2px' }}>
-                  {senderProfile?.bank} **** {senderProfile?.accNo.slice(-4) || "1234"}
-                </span>
-              </div>
+          <div className="bank-row">
+            <div className="bank-icon">
+               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
             </div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={THEME.textSub} strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <div className="bank-meta">
+              <div className="bank-name">{senderProfile?.bank}</div>
+              <div className="bank-acno">**** {senderProfile?.accNo.slice(-4)}</div>
+            </div>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
 
           <button 
+            className="btn btn-primary"
             onClick={() => {
-              if (!amount || Number(amount) <= 0) return setError("Enter a valid amount");
-              if (Number(amount) > (senderProfile?.balance || 0)) return setError("Insufficient Balance in your specific linked account!");
+              if (!amount || Number(amount) <= 0) return setError("Enter amount");
+              if (Number(amount) > (senderProfile?.balance || 0)) return setError("Insufficient Balance!");
               setError("");
               setStep("auth");
             }}
-            style={{ width: '100%', padding: '18px', borderRadius: '12px', border: 'none', backgroundColor: THEME.primary, color: 'white', fontSize: '18px', fontWeight: 'bold', marginTop: '20px', cursor: 'pointer', boxShadow: '0 4px 14px 0 rgba(95, 37, 159, 0.3)' }}
+            style={{ marginTop: '20px', padding: '20px' }}
           >
-            Pay ₹{amount || "0"}
+            Pay Securely ₹{amount || "0"}
           </button>
         </div>
       </div>
@@ -503,58 +509,49 @@ export default function PaymentPage() {
   // ------------------------------------------------------------------
   if (step === "auth") {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '80vh', backgroundColor: THEME.background }}>
-        <header style={{ backgroundColor: THEME.primary, padding: '16px 20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <button onClick={() => setStep("amount")} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            </button>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-               <span style={{ fontSize: '1rem', fontWeight: 600 }}>{senderProfile?.bank} **** {senderProfile?.accNo.slice(-4)}</span>
-               <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Secure Verification</span>
-            </div>
-          </div>
+      <div className="page-content">
+        <header className="topbar">
+          <button onClick={() => setStep("amount")} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+          <div className="topbar-title">UPI PIN</div>
           <ThemeToggle />
         </header>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px' }}>
-           <h2 style={{ fontSize: '18px', fontWeight: 600, color: THEME.textHeader, marginBottom: '8px' }}>Enter 4-digit UPI PIN</h2>
-           {error ? (
-              <p style={{ fontSize: '14px', color: '#DC2626', marginBottom: '30px', textAlign: 'center', fontWeight: 'bold' }}>{error}</p>
-           ) : (
-              <p style={{ fontSize: '14px', color: THEME.textSub, marginBottom: '30px', textAlign: 'center' }}>To send ₹{amount} to {receiverName || phoneNumber || bankAccount || 'Verified Merchant'}</p>
-           )}
-
-           <div style={{ display: 'flex', gap: '12px', marginBottom: '40px' }}>
-              {[0, 1, 2, 3].map(i => (
-                <div key={i} style={{ width: '16px', height: '16px', borderRadius: '50%', border: `1px solid ${THEME.border}`, backgroundColor: upiPin.length > i ? THEME.textHeader : 'transparent' }}></div>
-              ))}
+        <div className="scroll-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+           <div className="card" style={{ width: '100%', textAlign: 'center', padding: '32px 24px', marginBottom: '24px' }}>
+              <div className="bank-name" style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>Paying to {receiverName || phoneNumber}</div>
+              <div style={{ fontSize: '32px', fontWeight: 800 }}>₹{amount}</div>
+              
+              <div className="divider" style={{ margin: '24px 0' }}></div>
+              
+              <div className="label" style={{ marginBottom: '16px' }}>Enter 4-Digit UPI PIN</div>
+              <div className="pin-dots">
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className={`pin-dot ${upiPin.length > i ? 'filled' : ''}`}></div>
+                ))}
+              </div>
+              {error && <div style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600 }}>{error}</div>}
            </div>
 
-           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '280px', width: '100%' }}>
+           <div className="pin-grid">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                <button key={num} onClick={() => upiPin.length < 4 && setUpiPin(p => p + num)} style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, borderRadius: '50%', width: '64px', height: '64px', fontSize: '24px', fontWeight: 500, color: THEME.textHeader, cursor: 'pointer', margin: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                  {num}
-                </button>
+                <button key={num} className="pin-key" onClick={() => upiPin.length < 4 && setUpiPin(p => p + num)}>{num}</button>
               ))}
-              <div></div>
-              <button onClick={() => upiPin.length < 4 && setUpiPin(p => p + "0")} style={{ background: THEME.surface, border: `1px solid ${THEME.border}`, borderRadius: '50%', width: '64px', height: '64px', fontSize: '24px', fontWeight: 500, color: THEME.textHeader, cursor: 'pointer', margin: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                0
-              </button>
-              <button 
-                onClick={() => setUpiPin(p => p.slice(0, -1))} 
-                style={{ background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', width: '64px', height: '64px', margin: 'auto' }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={THEME.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+              <div />
+              <button className="pin-key" onClick={() => upiPin.length < 4 && setUpiPin(p => p + "0")}>0</button>
+              <button className="pin-key" style={{ border: 'none', background: 'none', boxShadow: 'none' }} onClick={() => setUpiPin(p => p.slice(0, -1))}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2.5"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
               </button>
            </div>
 
            <button 
+             className="btn btn-success" 
              disabled={upiPin.length !== 4} 
              onClick={executePayment}
-             style={{ marginTop: '40px', padding: '16px 40px', backgroundColor: upiPin.length === 4 ? THEME.success : '#E5E7EB', color: upiPin.length === 4 ? 'white' : '#9CA3AF', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: 600, cursor: upiPin.length === 4 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: upiPin.length === 4 ? '0 4px 10px rgba(16,185,129,0.3)' : 'none', transition: 'all 0.2s' }}
+             style={{ marginTop: '40px', maxWidth: '280px' }}
            >
-             Submit Securely <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+             Confirm Payment
            </button>
         </div>
       </div>
@@ -566,13 +563,10 @@ export default function PaymentPage() {
   // ------------------------------------------------------------------
   if (step === "processing") {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', backgroundColor: THEME.primary, color: 'white', padding: '20px', textAlign: 'center' }}>
-        <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '30px' }}>
-          <div style={{ width: '60px', height: '60px', border: '4px solid rgba(255,255,255,0.3)', borderTop: '4px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        </div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '10px' }}>{processStage}</h2>
-        <p style={{ opacity: 0.8, fontSize: '1rem' }}>Please do not press back or close the app</p>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+      <div className="processing-screen">
+        <div className="spinner-ring"></div>
+        <h2 style={{ fontSize: '24px', fontWeight: 800 }}>{processStage}</h2>
+        <p style={{ opacity: 0.7 }}>Securely communicating with bank...</p>
       </div>
     );
   }
@@ -582,44 +576,38 @@ export default function PaymentPage() {
   // ------------------------------------------------------------------
   if (step === "success") {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', backgroundColor: THEME.background, padding: '20px' }}>
-        <div style={{ backgroundColor: THEME.surface, padding: '40px 24px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-          
-          <div style={{ width: '70px', height: '70px', borderRadius: '50%', backgroundColor: THEME.success, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', marginBottom: '20px', animation: 'bounceScale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <div className="success-screen">
+        <div className="success-card">
+          <div className="success-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"></polyline></svg>
           </div>
+          <div className="success-amount">₹{amount}</div>
+          <div className="success-label">Payment Successful</div>
           
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: THEME.textHeader }}>Payment of ₹{amount}<br/>Successful.</h2>
+          <div className="divider"></div>
           
-          <div style={{ width: '100%', height: '1px', backgroundColor: THEME.border, margin: '24px 0' }}></div>
-          
-          <div style={{ width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: THEME.textSub, fontSize: '14px' }}>Paid to</span>
-              <span style={{ color: THEME.textHeader, fontWeight: 600, fontSize: '14px' }}>{receiverName || phoneNumber || bankAccount}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: THEME.textSub, fontSize: '14px' }}>Debited from</span>
-              <span style={{ color: THEME.textHeader, fontWeight: 600, fontSize: '14px' }}>{senderProfile?.bank} **** {senderProfile?.accNo.slice(-4)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: THEME.textSub, fontSize: '14px' }}>Remaining Balance</span>
-              <span style={{ color: THEME.textHeader, fontWeight: 600, fontSize: '14px' }}>₹{senderProfile?.balance.toLocaleString('en-IN')}</span>
-            </div>
+          <div id="payment-success-msg" data-amount={amount} data-receiver={receiverName || phoneNumber || bankAccount} className="receipt-row">
+            <span className="key">To</span>
+            <span className="val">{receiverName || phoneNumber || bankAccount}</span>
           </div>
-          
-          <div style={{ position: 'relative', overflow: 'hidden', marginTop: '30px', padding: '16px', backgroundImage: 'linear-gradient(to right, #4338ca, #6366f1)', borderRadius: '12px', color: 'white', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)' }}>
-            <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.2 }}><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-            <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600, opacity: 0.8, marginBottom: '6px' }}>Smart Expense Tracked ✨</span>
-            <span style={{ fontSize: '16px', fontWeight: 'bold' }}>Categorized as: {detectedCategory}</span>
+          <div className="receipt-row">
+            <span className="key">From</span>
+            <span className="val">{senderProfile?.bank} ({senderProfile?.accNo.slice(-4)})</span>
           </div>
-        </div>
-        
-        <button onClick={() => { setStep("select"); setAmount(""); setReceiverName(""); setPhoneNumber(""); setBankAccount(""); setIfsc(""); setNote(""); }} style={{ marginTop: '30px', background: 'none', border: `1px solid ${THEME.primary}`, color: THEME.primary, padding: '12px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
-          Make Another Payment
-        </button>
+          <div className="receipt-row">
+             <span className="key">Ref No.</span>
+             <span className="val">{Math.floor(Math.random() * 9000000000) + 1000000000}</span>
+          </div>
 
-        <style>{`@keyframes bounceScale { 0% { transform: scale(0); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }`}</style>
+          <div className="category-badge">
+             <div className="badge-label">Auto-Categorized</div>
+             <div className="badge-value">{detectedCategory} ✨</div>
+          </div>
+
+          <button onClick={() => { setStep("select"); setAmount(""); setReceiverName(""); setPhoneNumber(""); setBankAccount(""); setIfsc(""); setNote(""); }} className="btn btn-primary" style={{ marginTop: '32px' }}>
+            Done
+          </button>
+        </div>
       </div>
     );
   }

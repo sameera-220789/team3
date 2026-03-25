@@ -1,12 +1,54 @@
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import PaymentPage from './pages/PaymentPage';
 import HistoryPage from './pages/HistoryPage';
+import AuthCallback from './pages/AuthCallback';
+import { getUser } from './utils/config';
 
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  const user = getUser();
+  
   const isPayment = location.pathname === '/' || location.pathname === '/pay';
   const isHistory = location.pathname === '/history';
+  const isAuthCallback = location.pathname === '/auth-callback';
+
+  // Landing Page for unauthenticated users
+  if (!user && !isAuthCallback) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <div style={{ width: '80px', height: '80px', backgroundColor: '#111827', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+           <span style={{ fontSize: '40px' }}>💜</span>
+        </div>
+        <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#111827', marginBottom: '12px', letterSpacing: '-0.025em' }}>Demo Payment App</h1>
+        <p style={{ color: '#6B7280', textAlign: 'center', marginBottom: '32px', maxWidth: '320px', fontSize: '16px', lineHeight: '1.5' }}>
+          Experience seamless payments. Connect your Smart Expense Tracker account to get started.
+        </p>
+        <button 
+          onClick={() => window.location.href = 'http://localhost:5173/login?redirect=http://localhost:3001/auth-callback'}
+          style={{ 
+            padding: '16px 32px', 
+            backgroundColor: '#111827', 
+            color: 'white', 
+            borderRadius: '12px', 
+            border: 'none', 
+            fontSize: '16px', 
+            fontWeight: '700', 
+            cursor: 'pointer', 
+            boxShadow: '0 4px 12px rgba(17, 24, 39, 0.25)',
+            transition: 'transform 0.2s ease'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          Log In with Smart Expense Tracker
+        </button>
+        <div style={{ marginTop: '40px', color: '#9CA3AF', fontSize: '12px', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Powered by Smart Expense Tracker
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -19,11 +61,34 @@ export default function App() {
             <div className="topbar-sub">Powered by Smart Expense Tracker</div>
           </div>
         </div>
-        <a href="http://localhost:5173/dashboard" target="_blank" rel="noopener noreferrer"
-          style={{ fontSize:11, color:'rgba(255,255,255,0.7)', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
-          Dashboard
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <a href="http://localhost:5173/dashboard" target="_blank" rel="noopener noreferrer"
+            style={{ fontSize:11, color:'rgba(255,255,255,0.7)', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+            Dashboard
+          </a>
+          <button 
+            onClick={() => { sessionStorage.removeItem('token'); sessionStorage.removeItem('user'); window.location.reload(); }}
+            style={{ 
+              background: 'rgba(255,255,255,0.1)', 
+              border: 'none', 
+              color: 'white', 
+              padding: '4px 8px', 
+              borderRadius: '4px', 
+              fontSize: '10px', 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 600
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+          </button>
+        </div>
       </header>
 
       {/* Page Content */}
@@ -31,6 +96,7 @@ export default function App() {
         <Route path="/"        element={<PaymentPage />} />
         <Route path="/pay"     element={<PaymentPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/auth-callback" element={<AuthCallback />} />
       </Routes>
 
       {/* Bottom Tab Bar */}

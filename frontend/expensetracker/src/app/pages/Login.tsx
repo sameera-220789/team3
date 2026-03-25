@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { API_BASE_URL } from "../utils/config";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +32,14 @@ export default function Login() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", "user");
         localStorage.setItem("user", JSON.stringify(data.user));
-        navigate("/dashboard");
+        
+        const params = new URLSearchParams(location.search);
+        const redirectUrl = params.get("redirect");
+        if (redirectUrl) {
+          window.location.href = `${redirectUrl}?token=${data.token}&user=${encodeURIComponent(JSON.stringify(data.user))}`;
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         // Login failed
         setError(data.message || "Login failed. Please try again.");

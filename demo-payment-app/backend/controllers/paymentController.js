@@ -83,8 +83,9 @@ exports.processPayment = async (req, res) => {
     const savedTx = await transaction.save();
 
     // 5. Call Expense Tracker's /api/expenses/auto-add
-    const expenseTrackerUrl = process.env.EXPENSE_TRACKER_URL || "http://localhost:5000";
+    // REMOVED: User wants the Chrome Extension to handle this detection now.
     let expenseId = null;
+    /*
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const expenseRes = await axios.post(
@@ -105,6 +106,7 @@ exports.processPayment = async (req, res) => {
     } catch (expErr) {
       console.warn("Auto-expense creation failed (non-critical):", expErr?.response?.data?.message || expErr.message);
     }
+    */
 
     // 6. Update transaction with expense ID reference
     if (expenseId) {
