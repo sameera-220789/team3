@@ -16,6 +16,8 @@ router.delete("/user/:id", adminController.deleteUser);
 router.get("/activities", adminController.getActivities);
 router.get("/categories", adminController.getCategoryStats);
 router.get("/spending-trends", adminController.getSpendingTrends);
+router.get("/transactions", adminController.getTransactions);
+router.get("/alerts", adminController.getAlerts);
 router.get("/system-health", adminController.getSystemHealth);
 
 module.exports = router;
