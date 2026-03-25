@@ -354,3 +354,83 @@ exports.downloadCSV = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET FINANCIAL HEALTH SCORE
+exports.getFinancialHealthScore = async (req, res) => {
+  try {
+    const { userId, month } = req.query; // format: YYYY-MM
+    if (!userId) return res.status(400).json({ message: "userId is required" });
+
+    const targetMonth = month || new Date().toISOString().slice(0, 7);
+    const startDate = new Date(`${targetMonth}-01T00:00:00Z`);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    // Fetch budgets and expenses for the month
+    const [budgets, expenses] = await Promise.all([
+      Budget.find({ userId, month: targetMonth }),
+      Expense.find({ userId, date: { $gte: startDate, $lt: endDate } })
+    ]);
+
+    const totalExpenses = expenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
+    const totalIncome = expenses.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amount, 0);
+    const totalBudgetDoc = budgets.find(b => b.category === 'total');
+    const totalBudgetLimit = totalBudgetDoc ? totalBudgetDoc.limit : 0;
+
+    // 1. Budget Usage (40 points)
+    let budgetUsageScore = 0;
+    if (totalBudgetLimit > 0) {
+      if (totalExpenses <= totalBudgetLimit) {
+        budgetUsageScore = 40;
+      } else {
+        const overspentRatio = (totalExpenses - totalBudgetLimit) / totalBudgetLimit;
+        budgetUsageScore = Math.max(0, 40 - (overspentRatio * 40));
+      }
+    } else {
+        budgetUsageScore = 0;
+    }
+
+    // 2. Savings Score (30 points)
+    let savingsScore = 0;
+    const monthlySavings = totalIncome - totalExpenses;
+    if (monthlySavings > 0) {
+      const savingsRatio = totalIncome > 0 ? monthlySavings / totalIncome : 1; 
+      savingsScore = Math.min(30, (savingsRatio / 0.2) * 30);
+    } else if (totalIncome === 0 && totalExpenses === 0) {
+      savingsScore = 15; 
+    } else {
+      savingsScore = 0;
+    }
+
+    // 3. Overspending Frequency (30 points)
+    const overspentCategories = budgets.filter(b => b.category !== 'total' && b.spentAmount > b.limit);
+    const overspentCount = overspentCategories.length;
+    const overspendingScore = Math.max(0, 30 - (overspentCount * 10));
+
+    const totalScore = Math.round(budgetUsageScore + savingsScore + overspendingScore);
+
+    let insight = "";
+    if (totalScore >= 80) {
+      insight = "Excellent! You are managing your finances perfectly.";
+    } else if (totalScore >= 60) {
+      insight = "Good job! You managed your budget well this month.";
+    } else if (totalScore >= 40) {
+        insight = "You're on track, but there's room for improvement in your spending habits.";
+    } else {
+      insight = "You exceeded your budget multiple times. Try reducing unnecessary expenses.";
+    }
+
+    res.json({
+      score: totalScore,
+      details: {
+        budgetUsage: Math.round(budgetUsageScore),
+        savingsScore: Math.round(savingsScore),
+        overspendingScore: Math.round(overspendingScore)
+      },
+      insight
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

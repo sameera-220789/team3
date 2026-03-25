@@ -9,6 +9,7 @@ import {
 import { API_BASE_URL } from "../utils/config";
 import { SpendingCalendar } from "../components/SpendingCalendar";
 import { getEmoji } from "../utils/formatters";
+import { FinancialHealthScore } from "../components/FinancialHealthScore";
 
 // Color palette for dynamic categories
 const categoryColors: Record<string, string> = {
@@ -200,103 +201,96 @@ export default function Dashboard() {
           <div className="budget-header-left">
             <h1 className="budget-page-title">{getPageTitle()}</h1>
             <p className="budget-page-subtitle">{getPageSubtitle()}</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
               <button 
                 onClick={() => navigateMonth(-1)}
                 className="month-nav-btn"
-                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+                style={{ height: '24px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', background: 'var(--color-gray-100)', border: '1px solid var(--color-gray-200)', cursor: 'pointer', fontSize: '11px', fontWeight: 500, color: 'var(--color-gray-700)' }}
               >
-                &lsaquo; Prev
+                Prev
               </button>
               <button 
                 onClick={setPresentMonth}
-                className="month-nav-btn present-btn"
-                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+                className="month-nav-btn"
+                style={{ height: '24px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', background: 'var(--color-primary-light)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
               >
-                Present
+                Today
               </button>
-              <p className="budget-page-subtitle" style={{ margin: 0, fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem', minWidth: '120px', textAlign: 'center' }}>
-                {new Date(`${selectedMonth}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </p>
               <button 
                 onClick={() => navigateMonth(1)}
                 className="month-nav-btn"
-                style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+                style={{ height: '24px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', background: 'var(--color-gray-100)', border: '1px solid var(--color-gray-200)', cursor: 'pointer', fontSize: '11px', fontWeight: 500, color: 'var(--color-gray-700)' }}
               >
-                Next &rsaquo;
+                Next
               </button>
+              <span style={{ marginLeft: '8px', fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.9rem', minWidth: '90px' }}>
+                {new Date(`${selectedMonth}-01`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              </span>
             </div>
           </div>
           <div className="budget-header-right">
             <button 
-              className="btn btn-secondary" 
+              className="icon-btn" 
               onClick={() => setShowCalendar(true)}
-              style={{ padding: '8px', minWidth: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-gray-100)', border: '1px solid var(--color-gray-200)' }}
               title="View Spending Calendar"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
                 <line x1="3" y1="10" x2="21" y2="10"></line>
-                <path d="M8 14h.01"></path>
-                <path d="M12 14h.01"></path>
-                <path d="M16 14h.01"></path>
-                <path d="M8 18h.01"></path>
-                <path d="M12 18h.01"></path>
-                <path d="M16 18h.01"></path>
               </svg>
             </button>
             <ThemeToggle />
             <div style={{ position: 'relative' }}>
-              <button className="btn btn-secondary" onClick={() => setShowExportMenu(!showExportMenu)}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M3 3L17 3V13L10 17L3 13V3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <button className="btn btn-secondary btn-small" onClick={() => setShowExportMenu(!showExportMenu)} style={{ height: '36px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Export Report
+                Export
               </button>
               {showExportMenu && (
                 <div style={{
                   position: 'absolute', top: '100%', right: 0, marginTop: '8px',
-                  backgroundColor: 'var(--color-popover)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  zIndex: 100, padding: '8px', minWidth: '150px', border: '1px solid var(--color-border)'
+                  backgroundColor: 'var(--color-popover)', borderRadius: '8px', boxShadow: 'var(--shadow-lg)',
+                  zIndex: 100, padding: '4px', minWidth: '140px', border: '1px solid var(--color-border)', overflow: 'hidden'
                 }}>
                   <button 
-                    style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '14px', color: 'var(--color-popover-foreground)' }}
+                    style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: 'var(--color-popover-foreground)' }}
                     onClick={() => {
                        window.open(`${API_BASE_URL}/api/reports/download/pdf?userId=${user.id}&month=${selectedMonth}`, '_blank');
                        setShowExportMenu(false);
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-muted)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     Download PDF
                   </button>
                   <button 
-                    style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '14px', color: 'var(--color-popover-foreground)' }}
+                    style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: 'var(--color-popover-foreground)' }}
                     onClick={() => {
                         window.open(`${API_BASE_URL}/api/reports/download/csv?userId=${user.id}&month=${selectedMonth}`, '_blank');
                         setShowExportMenu(false);
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-muted)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     Download CSV
                   </button>
                 </div>
               )}
             </div>
-            <Link to="/add-expense" className="btn btn-primary">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <Link to="/add-expense" className="btn btn-primary btn-small" style={{ height: '36px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
               Add Expense
             </Link>
-            <div className="user-panel">
-              <div className="user-avatar">{user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}</div>
-              <div className="user-info">
-                <p className="user-name">{user?.firstName} {user?.lastName}</p>
-                <p className="user-role">Personal Account</p>
+            <div className="user-panel" style={{ height: '36px', padding: '0 8px' }}>
+              <div className="user-avatar" style={{ width: '28px', height: '28px', fontSize: '11px' }}>{user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}</div>
+              <div className="user-info" style={{ gap: 0 }}>
+                <p className="user-name" style={{ fontSize: '12px' }}>{user?.firstName}</p>
+                <p className="user-role" style={{ fontSize: '10px' }}>Account</p>
               </div>
             </div>
           </div>
@@ -328,6 +322,7 @@ export function DashboardOverview() {
   const [chartExpenses, setChartExpenses] = useState<any[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
   const [totalSavings, setTotalSavings] = useState(0);
+  const [healthScore, setHealthScore] = useState<any>(null);
 
   const totalExpenses = expenses.filter(e => e.type !== 'income').reduce((sum, exp) => sum + exp.amount, 0);
   const totalBudgetDoc = budgets.find(b => b.category === 'total');
@@ -371,6 +366,13 @@ export function DashboardOverview() {
         if (insightsRes.ok) {
           const insightsData = await insightsRes.json();
           setInsights(insightsData);
+        }
+
+        // Fetch Financial Health Score
+        const healthRes = await fetch(`${API_BASE_URL}/api/financial-health-score?userId=${user.id}&month=${selectedMonth}`);
+        if (healthRes.ok) {
+          const healthData = await healthRes.json();
+          setHealthScore(healthData);
         }
       }
     } catch (error) {
@@ -752,109 +754,104 @@ export function DashboardOverview() {
             </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="dashboard-grid">
+      {/* Charts Section - Restructured for 3-column layout */}
+      <div className="dashboard-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
         {/* Spending Overview Chart */}
         <div className="card chart-card">
-              <div className="card-header-section">
-                <div>
-                  <h3 className="card-title">Spending Overview</h3>
-                  <p className="card-subtitle">Monthly spending trend</p>
-                </div>
-                <select className="chart-filter" value={chartRange} onChange={(e) => setChartRange(e.target.value)}>
-                  <option value="7">Last 7 days</option>
-                  <option value="30">Last 30 days</option>
-                  <option value="90">Last 90 days</option>
-                </select>
-              </div>
-              <div className="chart-container">
-                <svg className="line-chart" viewBox="0 0 600 250">
-                  {/* Grid lines */}
-                  <line x1="0" y1="50" x2="600" y2="50" stroke="var(--color-gray-200)" strokeWidth="1" />
-                  <line x1="0" y1="100" x2="600" y2="100" stroke="var(--color-gray-200)" strokeWidth="1" />
-                  <line x1="0" y1="150" x2="600" y2="150" stroke="var(--color-gray-200)" strokeWidth="1" />
-                  <line x1="0" y1="200" x2="600" y2="200" stroke="var(--color-gray-200)" strokeWidth="1" />
-
-                  {/* Area fill */}
-                  <path d={areaPath}
-                    fill="url(#area-gradient)" opacity="0.3" />
-
-                  {/* Line */}
-                  <path d={linePath}
-                    stroke="url(#line-gradient)"
-                    strokeWidth="3"
-                    fill="none" />
-
-                  {/* Data points (only show points if not too many) */}
-                  {chartData.length <= 31 && chartData.map((amount, i) => (
-                    <circle key={i} cx={i * (600/(chartData.length - 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
-                  ))}
-
-                  <defs>
-                    <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" style={{ stopColor: "#6366f1" }} />
-                      <stop offset="100%" style={{ stopColor: "#ffffff" }} />
-                    </linearGradient>
-                    <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" style={{ stopColor: "#6366f1" }} />
-                      <stop offset="100%" style={{ stopColor: "#8b5cf6" }} />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="chart-labels">
-                  {chartLabels.map((lbl, idx) => <span key={idx}>{lbl}</span>)}
-                </div>
-              </div>
+          <div className="card-header-section" style={{ marginBottom: '1.5rem' }}>
+            <div>
+              <h3 className="card-title">Spending Overview</h3>
+              <p className="card-subtitle">Spending trend</p>
             </div>
-
-            <div className="card">
-              <div className="card-header-section">
-                <div>
-                  <h3 className="card-title">Category Distribution</h3>
-                  <p className="card-subtitle">All time breakdown</p>
-                </div>
-              </div>
-              <div className="category-chart" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem', marginTop: '1rem', marginBottom: '0.5rem' }}>
-                {/* Donut chart centred */}
-                <div className="donut-chart" style={{ width: '180px', height: '180px', flexShrink: 0 }}>
-                  <svg viewBox="0 0 200 200" style={{ overflow: 'visible', width: '100%', height: '100%' }}>
-                    <circle cx="100" cy="100" r="80" fill="none" stroke="var(--color-gray-100)" strokeWidth="40" />
-                    {totalExpenses > 0 && segmentProps.map(({ cat, color, props }) => (
-                      <circle key={cat} cx="100" cy="100" r="80" fill="none" stroke={color} strokeWidth="40"
-                        {...props} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease', cursor: 'pointer' }} />
-                    ))}
-                    <text x="100" y="95" textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--color-gray-900)">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</text>
-                    <text x="100" y="115" textAnchor="middle" fontSize="12" fill="var(--color-gray-400)">Total Spent</text>
-
-                  </svg>
-                </div>
-                {/* Legend below chart — only when expenses exist */}
-                {expenses.length > 0 && activeCategories.length > 0 && (
-                  <div className="category-legend" style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '0.5rem 1.5rem',
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    background: 'var(--color-gray-50)',
-                    borderRadius: '0.5rem',
-                    border: '1px solid var(--color-gray-100)'
-                  }}>
-                    {activeCategories.map(([cat, amt], idx) => (
-                      <div className="legend-item" key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-                        <span className="legend-dot" style={{ background: getCategoryColor(cat, idx), flexShrink: 0 }}></span>
-                        <span className="legend-label" style={{ textTransform: 'capitalize', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-gray-700)' }}>{cat}</span>
-                        <span className="legend-value" style={{ flexShrink: 0, color: 'var(--color-gray-900)', fontWeight: 600 }}>₹{amt.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-              </div>
+            <select className="chart-filter" value={chartRange} onChange={(e) => setChartRange(e.target.value)}>
+              <option value="7">Last 7d</option>
+              <option value="30">Last 30d</option>
+              <option value="90">Last 90d</option>
+            </select>
+          </div>
+          <div className="chart-container" style={{ marginTop: '0.5rem' }}>
+            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px' }}>
+              <defs>
+                <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" style={{ stopColor: "#6366f1" }} />
+                  <stop offset="100%" style={{ stopColor: "#ffffff" }} />
+                </linearGradient>
+                <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: "#6366f1" }} />
+                  <stop offset="100%" style={{ stopColor: "#8b5cf6" }} />
+                </linearGradient>
+              </defs>
+              <path d={areaPath} fill="url(#area-gradient)" opacity="0.3" />
+              <path d={linePath} stroke="url(#line-gradient)" strokeWidth="3" fill="none" />
+              {chartData.length <= 31 && chartData.map((amount, i) => (
+                <circle key={i} cx={i * (600/(chartData.length -1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
+              ))}
+            </svg>
+            <div className="chart-labels" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+              {chartLabels.slice(0, 3).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
+              {chartLabels.slice(-1).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
             </div>
           </div>
+        </div>
 
-          {/* Recent Transactions & Budget Alerts */}
+        {/* Financial Health Score (1/3 width) */}
+        {healthScore && (
+          <div className="card" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+            <FinancialHealthScore 
+              score={healthScore.score} 
+              details={healthScore.details} 
+              insight={healthScore.insight} 
+            />
+          </div>
+        )}
+
+        {/* Category Distribution (1/3 width) */}
+        <div className="card chart-card">
+          <div className="card-header-section" style={{ marginBottom: '1.25rem' }}>
+            <div>
+              <h3 className="card-title">Category Distribution</h3>
+              <p className="card-subtitle">Monthly breakdown</p>
+            </div>
+          </div>
+          <div className="category-chart" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+            <div className="donut-chart" style={{ width: '160px', height: '160px', flexShrink: 0, position: 'relative' }}>
+              <svg viewBox="0 0 200 200" style={{ overflow: 'visible', width: '100%', height: '100%' }}>
+                <circle cx="100" cy="100" r="80" fill="none" stroke="var(--color-gray-100)" strokeWidth="36" />
+                {totalExpenses > 0 && segmentProps.map(({ cat, color, props }) => (
+                  <circle key={cat} cx="100" cy="100" r="80" fill="none" stroke={color} strokeWidth="36"
+                    {...props} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease', cursor: 'pointer' }} />
+                ))}
+                <text x="100" y="98" textAnchor="middle" fontSize="24" fontWeight="800" fill="var(--color-gray-900)">₹{(totalExpenses/1000).toFixed(1)}k</text>
+                <text x="100" y="118" textAnchor="middle" fontSize="12" fontWeight="500" fill="var(--color-gray-500)">Total Spent</text>
+              </svg>
+            </div>
+            
+            {expenses.length > 0 && activeCategories.length > 0 && (
+              <div className="category-legend" style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '0.4rem',
+                width: '100%',
+                padding: '0.6rem 0.8rem',
+                background: 'rgba(249, 250, 251, 0.5)',
+                borderRadius: '0.75rem',
+                border: '1px solid var(--color-gray-100)',
+                maxHeight: '120px',
+                overflowY: 'auto'
+              }}>
+                {activeCategories.slice(0, 4).map(([cat, amt], idx) => (
+                  <div className="legend-item" key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className="legend-dot" style={{ width: '10px', height: '10px', borderRadius: '50%', background: getCategoryColor(cat, idx), flexShrink: 0 }}></span>
+                    <span className="legend-label" style={{ textTransform: 'capitalize', flex: 1, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--color-gray-700)' }}>{cat}</span>
+                    <span className="legend-value" style={{ flexShrink: 0, fontSize: '0.85rem', color: 'var(--color-gray-900)', fontWeight: 600 }}>₹{amt > 999 ? (amt/1000).toFixed(1) + 'k' : amt}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Highlights: Insights & Alerts Side by Side */}
       <div className="dashboard-grid">
         <div className="card">
@@ -1032,6 +1029,7 @@ export function DashboardTransactions() {
 export function DashboardReports() {
   const { selectedMonth } = useOutletContext<{ selectedMonth: string }>();
   const [reportData, setReportData] = useState<any>(null);
+  const [healthScore, setHealthScore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const user = getUser();
 
@@ -1042,6 +1040,13 @@ export function DashboardReports() {
       if (res.ok) {
         const data = await res.json();
         setReportData(data);
+      }
+
+      // Fetch Financial Health Score
+      const healthRes = await fetch(`${API_BASE_URL}/api/financial-health-score?userId=${user.id}&month=${selectedMonth}`);
+      if (healthRes.ok) {
+        const healthData = await healthRes.json();
+        setHealthScore(healthData);
       }
     } catch (error) {
       console.error("Error fetching report data:", error);
@@ -1110,6 +1115,16 @@ export function DashboardReports() {
           <p className="stat-value" style={{ color: 'var(--color-success)' }}>₹{(reportData.totalIncome || 0).toLocaleString('en-IN')}</p>
         </div>
       </div>
+
+      {healthScore && (
+        <div style={{ marginBottom: '24px' }}>
+          <FinancialHealthScore 
+            score={healthScore.score} 
+            details={healthScore.details} 
+            insight={healthScore.insight} 
+          />
+        </div>
+      )}
 
       <div className="dashboard-grid">
         {/* Category breakdown Chart */}
