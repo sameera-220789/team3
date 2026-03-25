@@ -23,7 +23,9 @@ const expenseSchema = new mongoose.Schema({
   source: {
     type: String,
     default: 'manual' 
-  }
+  },
+  referenceId: String,
+  messageHash: String
 }, { timestamps: true });
 
 module.exports = mongoose.model("Expense", expenseSchema);
