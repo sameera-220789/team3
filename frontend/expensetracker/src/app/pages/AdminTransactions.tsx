@@ -6,12 +6,29 @@ interface TrendPoint {
   count: number;
 }
 
+interface Transaction {
+  _id: string;
+  amount: number;
+  category: string;
+  type: string;
+  date: string;
+  createdAt: string;
+  userId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
 type Period = "daily" | "weekly" | "monthly";
 
 export default function AdminTransactions() {
   const [period, setPeriod] = useState<Period>("weekly");
   const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
 
   const token = localStorage.getItem("adminToken");
 
@@ -31,7 +48,24 @@ export default function AdminTransactions() {
       }
     };
     fetchTrends();
-  }, [period]);
+  }, [period, token]);
+
+  useEffect(() => {
+    setTxLoading(true);
+    const fetchTransactions = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/transactions", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) setTransactions(await res.json());
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setTxLoading(false);
+      }
+    };
+    fetchTransactions();
+  }, [token]);
 
   const maxTotal = trends.length > 0 ? Math.max(...trends.map((t) => t.total)) : 1;
   const totalSpend = trends.reduce((s, t) => s + t.total, 0);
@@ -164,6 +198,58 @@ export default function AdminTransactions() {
                     <td style={{ padding: "8px 12px", fontWeight: 500 }}>{t.label}</td>
                     <td style={{ padding: "8px 12px" }}>₹{t.total.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</td>
                     <td style={{ padding: "8px 12px", color: "var(--color-muted-foreground, #6b7280)" }}>{t.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="card col-span-3">
+        <div className="card-header-section">
+          <h3 className="card-title">Recent Transactions</h3>
+        </div>
+        {txLoading ? (
+          <div style={{ padding: "40px", textAlign: "center", color: "var(--color-muted-foreground, #6b7280)" }}>Loading transactions…</div>
+        ) : transactions.length === 0 ? (
+          <div style={{ padding: "40px", textAlign: "center", color: "var(--color-muted-foreground, #6b7280)" }}>No recent transactions found.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="transactions-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", textAlign: "left" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--color-border, #e5e7eb)" }}>
+                  <th style={{ padding: "12px 16px", color: "var(--color-muted-foreground)", fontWeight: 600, fontSize: "12px", textTransform: "uppercase" }}>User</th>
+                  <th style={{ padding: "12px 16px", color: "var(--color-muted-foreground)", fontWeight: 600, fontSize: "12px", textTransform: "uppercase" }}>Category</th>
+                  <th style={{ padding: "12px 16px", color: "var(--color-muted-foreground)", fontWeight: 600, fontSize: "12px", textTransform: "uppercase" }}>Amount</th>
+                  <th style={{ padding: "12px 16px", color: "var(--color-muted-foreground)", fontWeight: 600, fontSize: "12px", textTransform: "uppercase" }}>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map(tx => (
+                  <tr key={tx._id} style={{ borderBottom: "1px solid var(--color-border, #f3f4f6)" }}>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ fontWeight: 500 }}>{tx.userId?.firstName || "Unknown"} {tx.userId?.lastName || ""}</div>
+                      <div style={{ fontSize: "12px", color: "var(--color-muted-foreground)" }}>{tx.userId?.email || "No email"}</div>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span style={{ 
+                        background: "var(--color-muted, #ececf0)", 
+                        padding: "4px 8px", 
+                        borderRadius: "4px", 
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "var(--color-foreground)"
+                      }}>
+                        {tx.category}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontWeight: 600, color: "var(--color-danger)" }}>
+                      -₹{tx.amount?.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                    </td>
+                    <td style={{ padding: "12px 16px", color: "var(--color-muted-foreground)" }}>
+                      {new Date(tx.createdAt).toLocaleDateString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>

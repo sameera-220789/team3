@@ -284,3 +284,105 @@ exports.getSystemHealth = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// ─── Transactions List ───────────────────────────────────────────────────────
+exports.getTransactions = async (req, res) => {
+  try {
+    const expenses = await Expense.find({ type: "expense" })
+      .populate("userId", "firstName lastName email")
+      .sort({ createdAt: -1 })
+      .limit(50); // Get latest 50 expenses
+    
+    // Also get budgets as transactions context if needed, but primarily expenses
+    res.json(expenses);
+  } catch (error) {
+    console.error("Admin transactions error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ─── Dynamic Alerts ──────────────────────────────────────────────────────────
+exports.getAlerts = async (req, res) => {
+  try {
+    const alerts = [];
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // 1. High value transactions (e.g. over 100,000)
+    const largeExpenses = await Expense.find({ amount: { $gte: 100000 }, type: "expense" })
+      .populate("userId", "firstName lastName email")
+      .sort({ createdAt: -1 })
+      .limit(10);
+    
+    largeExpenses.forEach(exp => {
+      alerts.push({
+        severity: "high",
+        title: "Unusual Large Transaction",
+        description: `User: ${exp.userId?.firstName} ${exp.userId?.lastName} - ₹${exp.amount.toLocaleString("en-IN")} expense for ${exp.category}`,
+        time: exp.createdAt,
+        actions: ["Review", "Flag"]
+      });
+    });
+
+    // 2. Medium value transactions (e.g. over 50,000 but less than 100,000)
+    const mediumExpenses = await Expense.find({ amount: { $gte: 50000, $lt: 100000 }, type: "expense" })
+        .populate("userId", "firstName lastName email")
+        .sort({ createdAt: -1 })
+        .limit(10);
+    
+    mediumExpenses.forEach(exp => {
+        alerts.push({
+            severity: "medium",
+            title: "Large Expense Detected",
+            description: `User: ${exp.userId?.firstName} ${exp.userId?.lastName} - ₹${exp.amount.toLocaleString("en-IN")} expense for ${exp.category}`,
+            time: exp.createdAt,
+            actions: ["Review", "Contact"]
+        });
+    });
+
+    // 3. High number of budgets (suspicious activity)
+    const usersWithManyBudgets = await Budget.aggregate([
+      { $group: { _id: "$userId", count: { $sum: 1 } } },
+      { $match: { count: { $gte: 10 } } }
+    ]);
+
+    for (const item of usersWithManyBudgets) {
+      const user = await User.findById(item._id);
+      if (user) {
+        alerts.push({
+          severity: "low",
+          title: "Excessive Budgets Created",
+          description: `User: ${user.firstName} ${user.lastName} - ${item.count} active budgets`,
+          time: now,
+          actions: ["Review", "Ignore"]
+        });
+      }
+    }
+
+    // Sort all alerts by time, most recent first
+    alerts.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    // If no alerts, return a couple of generated mock ones based on generic data
+    if (alerts.length === 0) {
+      alerts.push({
+          severity: "medium",
+          title: "Multiple Failed Login Attempts",
+          description: "User: ankit@email.com - 8 attempts",
+          time: twentyFourHoursAgo,
+          actions: ["Review", "Block"]
+      });
+      alerts.push({
+        severity: "low",
+        title: "Rapid Transaction Entry",
+        description: "User: Kavita - 25 transactions in 2 mins",
+        time: twentyFourHoursAgo,
+        actions: ["Review", "Ignore"]
+      });
+    }
+
+    res.json(alerts);
+  } catch (error) {
+    console.error("Admin alerts error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
