@@ -239,8 +239,12 @@ export default function Budget() {
     .filter((b: any) => b.category !== 'total')
     .reduce((sum: number, b: any) => sum + b.limit, 0);
 
-  // Remaining unallocated budget = overall budget minus actual spend
-  const unallocatedBudget = overallTotalBudget - totalSpent;
+  // Remaining budget = overall budget minus actual spend
+  const remainingBudget = overallTotalBudget - totalSpent;
+  const isOverBudget = remainingBudget < 0;
+
+  // Unallocated budget = overall budget minus total category budget
+  const unallocatedBudget = overallTotalBudget - totalCategoryBudget;
   const isOverAllocated = unallocatedBudget < 0;
   
   // Utilization based on actual spend vs overall budget
@@ -593,8 +597,8 @@ export default function Budget() {
         <div className="page-content">
           {activeTab === "budgets" && (
             <>
-              {/* Budget Overview — 3 cards side by side */}
-              <div className="budget-overview">
+              {/* Budget Overview — 4 cards side by side */}
+              <div className="budget-overview" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                 <div className="overview-card total">
                   <div className="overview-header">
                     <div className="overview-icon">
@@ -642,30 +646,30 @@ export default function Budget() {
                   <div className="overview-header">
                     <div className="overview-icon">
                       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <circle cx="16" cy="16" r="14" fill={isOverAllocated ? 'var(--color-danger-light)' : 'var(--color-success-light)'} fillOpacity="0.2" />
-                        {isOverAllocated ? (
+                        <circle cx="16" cy="16" r="14" fill={isOverBudget ? 'var(--color-danger-light)' : 'var(--color-success-light)'} fillOpacity="0.2" />
+                        {isOverBudget ? (
                           <path d="M11 11L21 21M21 11L11 21" stroke="var(--color-danger)" strokeWidth="2.5" strokeLinecap="round" />
                         ) : (
                           <path d="M12 16L15 19L21 13" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                         )}
                       </svg>
                     </div>
-                    <h3 className="overview-title">Unallocated Balance</h3>
+                    <h3 className="overview-title">Remaining Budget</h3>
                   </div>
-                  <p className="overview-amount" style={{ color: isOverAllocated ? 'var(--color-danger)' : 'var(--color-success)' }}>
-                    {isOverAllocated ? '-' : ''}₹{formatCurrency(Math.abs(unallocatedBudget))}
+                  <p className="overview-amount" style={{ color: isOverBudget ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                    {isOverBudget ? '-' : ''}₹{formatCurrency(Math.abs(remainingBudget))}
                   </p>
                   <div className="overview-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {isOverAllocated ? (
+                    {isOverBudget ? (
                       <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-danger)', background: 'var(--color-danger-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px', width: 'fit-content' }}>
-                        ⚠️ Over Allocated by ₹{formatCurrency(Math.abs(unallocatedBudget))}
+                        ⚠️ Over Budget by ₹{formatCurrency(Math.abs(remainingBudget))}
                       </span>
                     ) : (
                       <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px', width: 'fit-content' }}>
                         ✓ Within Budget
                       </span>
                     )}
-                    
+
                     {overallRemainingAmount > 0 && totalBudgetDoc && !totalBudgetDoc.carryForward && totalBudgetDoc.savings === 0 && (
                       <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                         <button 
@@ -703,6 +707,36 @@ export default function Budget() {
                     </p>
                   </div>
                 )}
+                  </div>
+                </div>
+
+                <div className="overview-card remaining">
+                  <div className="overview-header">
+                    <div className="overview-icon">
+                      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="14" fill={isOverAllocated ? 'var(--color-danger-light)' : 'var(--color-success-light)'} fillOpacity="0.2" />
+                        {isOverAllocated ? (
+                          <path d="M11 11L21 21M21 11L11 21" stroke="var(--color-danger)" strokeWidth="2.5" strokeLinecap="round" />
+                        ) : (
+                          <path d="M12 16L15 19L21 13" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        )}
+                      </svg>
+                    </div>
+                    <h3 className="overview-title">Unallocated Budget</h3>
+                  </div>
+                  <p className="overview-amount" style={{ color: isOverAllocated ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                    {isOverAllocated ? '-' : ''}₹{formatCurrency(Math.abs(unallocatedBudget))}
+                  </p>
+                  <div className="overview-footer" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {isOverAllocated ? (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-danger)', background: 'var(--color-danger-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px', width: 'fit-content' }}>
+                        ⚠️ Over Allocated by ₹{formatCurrency(Math.abs(unallocatedBudget))}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-light)', opacity: 0.8, padding: '2px 8px', borderRadius: '9999px', width: 'fit-content' }}>
+                        ✓ Within Budget Limit
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

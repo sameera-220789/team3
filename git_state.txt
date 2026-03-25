@@ -1,0 +1,5 @@
+﻿ M frontend/expensetracker/src/app/pages/Budget.tsx
+ M frontend/expensetracker/src/app/pages/Dashboard.tsx
+?? backend/smart-expense-tracker/uploads/receipt-1774382290094.jpeg
+?? git_state.txt
+?? git_status.txt
