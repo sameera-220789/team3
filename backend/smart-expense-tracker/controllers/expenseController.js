@@ -493,13 +493,9 @@ exports.autoDetectSms = async (req, res) => {
 
     // Extract Reference Number (Ref No, Txn ID, UTR) - Excluding IPPB No (Account)
     let referenceId = null;
-    const refMatch = message.match(/(?:\bref\s*no\.?|\btxn\s*id|\butr|\breference|\bid:)\s*[:#-]?\s*([a-z0-9]+)/i);
+    const refMatch = message.match(/(?:ref\s*no\.?|txn\s*id|utr|reference|id:)\s*[:#-]?\s*([a-z0-9]+)/i);
     if (refMatch) {
       referenceId = refMatch[1];
-      // Prevent false positives where the extracted reference ID is too short or just letters like 'rs'
-      if (referenceId.length < 4 || /^[a-z]+$/i.test(referenceId)) {
-        referenceId = null;
-      }
     }
 
     // Duplicate Prevention
@@ -507,15 +503,13 @@ exports.autoDetectSms = async (req, res) => {
     if (referenceId) {
       // Check for same Transaction ID
       duplicate = await Expense.findOne({ userId, referenceId });
-      if (duplicate) {
-        return res.status(400).json({ message: `Duplicate SMS transaction prevented (Reference ID: ${referenceId} already exists)` });
-      }
     } else {
       // Check for exact same message (same text pasted)
       duplicate = await Expense.findOne({ userId, messageHash });
-      if (duplicate) {
-        return res.status(400).json({ message: "Duplicate SMS transaction prevented (exact same message pasted)" });
-      }
+    }
+    
+    if (duplicate) {
+      return res.status(400).json({ message: "Duplicate SMS transaction prevented" });
     }
 
     const expenseDate = new Date();
