@@ -17,8 +17,22 @@ export default function App() {
   if (!user && !isAuthCallback) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-        <div style={{ width: '80px', height: '80px', backgroundColor: '#111827', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
-           <span style={{ fontSize: '40px' }}>💜</span>
+        <div style={{ width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+          <svg width="80" height="80" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="16" fill="url(#demo-pay-lg-bg)" />
+          <circle cx="16" cy="16" r="9" stroke="url(#demo-pay-lg-coin)" strokeWidth="1.5" fill="none"/>
+          <path d="M12 11H20M12 14H20M14 14L18 21M12.5 11C12.5 11 12.5 13.2 15.5 14C18.5 14.8 18.5 14 18.5 14" stroke="url(#demo-pay-lg-coin)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <defs>
+            <linearGradient id="demo-pay-lg-bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#6366F1" />
+              <stop offset="100%" stopColor="#A855F7" />
+            </linearGradient>
+            <linearGradient id="demo-pay-lg-coin" x1="7" y1="7" x2="25" y2="25" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#FDE047" />
+              <stop offset="100%" stopColor="#F59E0B" />
+            </linearGradient>
+          </defs>
+        </svg>
         </div>
         <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#111827', marginBottom: '12px', letterSpacing: '-0.025em' }}>Demo Payment App</h1>
         <p style={{ color: '#6B7280', textAlign: 'center', marginBottom: '32px', maxWidth: '320px', fontSize: '16px', lineHeight: '1.5' }}>
@@ -55,7 +69,23 @@ export default function App() {
       {/* Top Bar */}
       <header className="topbar">
         <div className="topbar-brand">
-          <div className="topbar-logo">💜</div>
+          <div className="topbar-logo" style={{ display: 'flex', alignItems: 'center' }}>
+  <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="16" fill="url(#demo-pay-bg)" />
+    <circle cx="16" cy="16" r="9" stroke="url(#demo-pay-coin)" strokeWidth="1.5" fill="none"/>
+    <path d="M12 11H20M12 14H20M14 14L18 21M12.5 11C12.5 11 12.5 13.2 15.5 14C18.5 14.8 18.5 14 18.5 14" stroke="url(#demo-pay-coin)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <defs>
+      <linearGradient id="demo-pay-bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#6366F1" />
+        <stop offset="100%" stopColor="#A855F7" />
+      </linearGradient>
+      <linearGradient id="demo-pay-coin" x1="7" y1="7" x2="25" y2="25" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#FDE047" />
+        <stop offset="100%" stopColor="#F59E0B" />
+      </linearGradient>
+    </defs>
+  </svg>
+</div>
           <div>
             <div className="topbar-title">Demo Payment App</div>
             <div className="topbar-sub">Powered by Smart Expense Tracker</div>
