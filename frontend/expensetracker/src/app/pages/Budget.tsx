@@ -248,7 +248,8 @@ export default function Budget() {
   const isOverAllocated = unallocatedBudget < 0;
   
   // Utilization based on actual spend vs overall budget
-  const overallUtilization = overallTotalBudget === 0 ? 0 : (overallSpentAmount / overallTotalBudget) * 100;
+  // Use computed totalSpent so Dashboard and Budgets always tally.
+  const overallUtilization = overallTotalBudget === 0 ? 0 : (totalSpent / overallTotalBudget) * 100;
 
   const startEditing = (category: BudgetCategory) => {
     setEditingCategoryId(category.id);
@@ -623,7 +624,7 @@ export default function Budget() {
                     <h3 className="overview-title">Total Spent</h3>
                   </div>
                   <p className="overview-amount danger">
-                    ₹{formatCurrency(overallSpentAmount)}
+                    ₹{formatCurrency(totalSpent)}
                   </p>
                   <div className="overview-footer">
                     <div className="progress-mini">

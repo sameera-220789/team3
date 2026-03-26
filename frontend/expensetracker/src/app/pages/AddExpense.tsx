@@ -774,7 +774,7 @@ export default function AddExpense() {
                   <Link to="/dashboard/transactions" className="view-all-link">View all</Link>
                 </div>
                 <div className="recent-transactions">
-                  {recentExpenses.length > 0 ? [...recentExpenses].reverse().slice(0, 4).map(exp => {
+                  {recentExpenses.length > 0 ? recentExpenses.slice(0, 4).map(exp => {
                     const getTheme = (cat: string) => ['food', 'travel', 'shopping', 'bills'].includes(cat) ? cat : 'other';
                     const getEmoji = (cat: string) => {
                       return getCategoryEmoji(cat);
