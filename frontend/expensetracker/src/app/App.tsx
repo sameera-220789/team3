@@ -22,6 +22,7 @@ import AdminLogs from "./pages/AdminLogs";
 import AdminTransactions from "./pages/AdminTransactions";
 import Profile from "./pages/Profile";
 import GuestGroupView from "./pages/GuestGroupView";
+import ChatbotWidget from "./components/Chatbot/ChatbotWidget";
 
 export function App() {
   return (
@@ -57,6 +58,7 @@ export function App() {
           <Route path="logs" element={<AdminLogs />} />
         </Route>
       </Routes>
+      <ChatbotWidget />
     </>
   );
 }
