@@ -136,6 +136,12 @@ export default function Dashboard() {
             </svg>
             <span>Add Expense</span>
           </Link>
+          <Link to="/add-income" className="sidebar-link">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span>Add Income</span>
+          </Link>
           <Link to="/budget" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
@@ -275,6 +281,13 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            <Link to="/add-income" className="btn btn-primary btn-small" style={{ height: '36px', backgroundColor: '#10b981', borderColor: '#10b981', marginRight: '8px' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add Income
+            </Link>
             <Link to="/add-expense" className="btn btn-primary btn-small" style={{ height: '36px' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -321,8 +334,12 @@ export function DashboardOverview() {
   const [healthScore, setHealthScore] = useState<any>(null);
 
   const totalExpenses = expenses.filter(e => e.type !== 'income').reduce((sum, exp) => sum + exp.amount, 0);
+  const incomeList = expenses.filter(e => e.type === 'income');
+  const totalIncome = incomeList.reduce((sum, exp) => sum + exp.amount, 0);
+
   const totalBudgetDoc = budgets.find(b => b.category === 'total');
-  const totalBudgetLimit = totalBudgetDoc ? totalBudgetDoc.limit : 0;
+  // totalBudget on the backend = initialBudget + all income added for this month
+  const totalBudgetLimit = totalBudgetDoc ? totalBudgetDoc.totalBudget : 0;
   const totalCategoryBudget = budgets.filter(b => b.category !== 'total').reduce((sum, b) => sum + b.limit, 0);
 
   // Remaining Budget = Overall Total Budget - Total Spent
