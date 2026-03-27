@@ -356,55 +356,45 @@ export function DashboardOverview() {
       const fetchOpts = { cache: "no-store" as RequestCache };
 
       // Use Promise.allSettled so if one endpoint 404s (e.g. no alerts), others still load
-      const endpoints = [
+      const [expenseRes, budgetRes, alertRes] = await Promise.allSettled([
         fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
         fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
         fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts)
       ]);
 
-      if (expenseRes.ok && budgetRes.ok && alertRes.ok) {
-        const expenseData = await expenseRes.json();
-        const budgetData = await budgetRes.json();
-        const alertData = await alertRes.json();
+      if (expenseRes.status === 'fulfilled' && expenseRes.value.ok) {
+        const expenseData = await expenseRes.value.json();
         setExpenses(expenseData);
+      }
+      if (budgetRes.status === 'fulfilled' && budgetRes.value.ok) {
+        const budgetData = await budgetRes.value.json();
         setBudgets(budgetData);
+      }
+      if (alertRes.status === 'fulfilled' && alertRes.value.ok) {
+        const alertData = await alertRes.value.json();
         setAlerts(alertData);
-
-        // Fetch user total savings
-        const userRes = await fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`);
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setTotalSavings(userData.totalSavings || 0);
-        }
-
-      const results = await Promise.allSettled(endpoints);
-
-      // Process Expenses
-      if (results[0].status === 'fulfilled' && results[0].value.ok) {
-        setExpenses(await results[0].value.json());
       }
-      // Process Budgets
-      if (results[1].status === 'fulfilled' && results[1].value.ok) {
-        setBudgets(await results[1].value.json());
-      }
-      // Process Alerts
-      if (results[2].status === 'fulfilled' && results[2].value.ok) {
-        setAlerts(await results[2].value.json());
-      }
-      // Process Profile (Total Savings)
-      if (results[3].status === 'fulfilled' && results[3].value.ok) {
-        const userData = await results[3].value.json();
+
+      // Fetch user total savings
+      const userRes = await fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`);
+      if (userRes.ok) {
+        const userData = await userRes.json();
         setTotalSavings(userData.totalSavings || 0);
       }
-      // Process Spending Insights
-      if (results[4].status === 'fulfilled' && results[4].value.ok) {
-        setInsights(await results[4].value.json());
-      }
-      // Process Financial Health Score
-      if (results[5].status === 'fulfilled' && results[5].value.ok) {
-        setHealthScore(await results[5].value.json());
+
+      // Fetch Spending Insights
+      const insightsRes = await fetch(`${API_BASE_URL}/api/reports/spending-insights?userId=${user.id}`);
+      if (insightsRes.ok) {
+        const insightsData = await insightsRes.json();
+        setInsights(insightsData);
       }
 
+      // Fetch Financial Health Score
+      const healthRes = await fetch(`${API_BASE_URL}/api/financial-health-score?userId=${user.id}&month=${selectedMonth}`);
+      if (healthRes.ok) {
+        const healthData = await healthRes.json();
+        setHealthScore(healthData);
+      }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -591,7 +581,7 @@ export function DashboardOverview() {
   };
 
   const { path: linePath, areaPath } = getPathData(chartData, maxSpending);
-  const { path: incomePath } = getPathData(incomeChartData, maxSpending);
+  const { path: incomePath, areaPath: incomeAreaPath } = getPathData(incomeChartData, maxSpending);
 
   // Hover state for dual-line tooltip
   const [chartHover, setChartHover] = React.useState<{ idx: number; x: number; y: number } | null>(null);
@@ -840,26 +830,112 @@ export function DashboardOverview() {
               <option value="7">Last 7d</option>
               <option value="30">Last 30d</option>
               <option value="90">Last 90d</option>
-             </select>
+            </select>
           </div>
-          <div className="chart-container" style={{ marginTop: '0.5rem' }}>
-            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px', width: '100%', preserveAspectRatio: 'none' }}>
+          {/* Legend for the chart */}
+          <div className="chart-legend" style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', justifySelf: 'flex-start' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--color-primary)' }}></span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-gray-600)', fontWeight: 500 }}>Expenses</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981' }}></span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-gray-600)', fontWeight: 500 }}>Income</span>
+            </div>
+          </div>
+
+          <div className="chart-container" style={{ marginTop: '0.5rem', position: 'relative' }}>
+            <svg
+              className="line-chart"
+              viewBox="0 0 600 250"
+              style={{ height: '180px', width: '100%', display: 'block' }}
+              preserveAspectRatio="none"
+              ref={chartSvgRef}
+              onMouseMove={handleChartMouseMove}
+              onMouseLeave={() => setChartHover(null)}
+            >
               <defs>
+                {/* Expense Gradients */}
                 <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" style={{ stopColor: "#6366f1" }} />
-                  <stop offset="100%" style={{ stopColor: "#ffffff" }} />
+                  <stop offset="100%" style={{ stopColor: "#ffffff00" }} />
                 </linearGradient>
                 <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" style={{ stopColor: "#6366f1" }} />
                   <stop offset="100%" style={{ stopColor: "#8b5cf6" }} />
                 </linearGradient>
+                {/* Income Gradients */}
+                <linearGradient id="income-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" style={{ stopColor: "#10b981" }} />
+                  <stop offset="100%" style={{ stopColor: "#ffffff00" }} />
+                </linearGradient>
+                <linearGradient id="income-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: "#34d399" }} />
+                  <stop offset="100%" style={{ stopColor: "#059669" }} />
+                </linearGradient>
               </defs>
+
+              {/* Area Paths */}
               <path d={areaPath} fill="url(#area-gradient)" opacity="0.3" />
-              <path d={linePath} stroke="url(#line-gradient)" strokeWidth="3" fill="none" />
+              <path d={incomeAreaPath} fill="url(#income-area-gradient)" opacity="0.2" />
+
+              {/* Line Paths */}
+              <path d={linePath} stroke="url(#line-gradient)" strokeWidth="3" fill="none" style={{ transition: 'd 0.3s ease' }} />
+              <path d={incomePath} stroke="url(#income-line-gradient)" strokeWidth="3" fill="none" style={{ transition: 'd 0.3s ease' }} />
+
+              {/* Expense Points */}
               {chartData.length <= 31 && chartData.map((amount, i) => (
-                <circle key={i} cx={i * (600 / (chartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
+                <circle key={`exp-${i}`} cx={i * (600 / (chartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
               ))}
+
+              {/* Income Points */}
+              {incomeChartData.length <= 31 && incomeChartData.map((amount, i) => (
+                <circle key={`inc-${i}`} cx={i * (600 / (incomeChartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={incomeChartData.length <= 7 ? "5" : "3"} fill="#10b981" />
+              ))}
+
+              {/* Hover Indicator Vertical Line */}
+              {chartHover && (
+                <line x1={chartHover.x} y1="0" x2={chartHover.x} y2="250" stroke="var(--color-gray-300)" strokeWidth="1" strokeDasharray="4 4" />
+              )}
             </svg>
+
+            {/* Interactive Comparison Tooltip */}
+            {chartHover && (
+              <div style={{
+                position: 'absolute',
+                top: '0',
+                left: `${(chartHover.x / 600) * 100}%`,
+                transform: `translateX(${chartHover.x > 300 ? '-110%' : '10%'})`,
+                backgroundColor: 'var(--color-popover)',
+                color: 'var(--color-popover-foreground)',
+                padding: '0.75rem',
+                borderRadius: '0.5rem',
+                boxShadow: 'var(--shadow-lg)',
+                border: '1px solid var(--color-border)',
+                zIndex: 10,
+                pointerEvents: 'none',
+                minWidth: '140px'
+              }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--color-gray-500)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                  Day {chartHover.idx + 1}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#6366f1' }}></span> Expense
+                    </span>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>₹{chartData[chartHover.idx].toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span> Income
+                    </span>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#10b981' }}>₹{incomeChartData[chartHover.idx].toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="chart-labels" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
               {chartLabels.slice(0, 3).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
               {chartLabels.slice(-1).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
