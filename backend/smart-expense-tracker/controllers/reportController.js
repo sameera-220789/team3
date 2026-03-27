@@ -116,7 +116,7 @@ exports.getSpendingInsights = async (req, res) => {
     const lastMonthTotal = lastMonthExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
 
     if (lastMonthTotal > 0) {
-      const monthDiff = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+      const monthDiff = Math.min(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100, 100);
       if (monthDiff > 10) {
         insights.push({
           type: "warning",
@@ -130,6 +130,14 @@ exports.getSpendingInsights = async (req, res) => {
           suggestion: "Move the surplus to your savings!"
         });
       }
+    }
+
+    if (thisMonthTotal > 0) {
+      insights.push({
+        type: "info",
+        message: `You have spent ₹${thisMonthTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} so far this month.`,
+        suggestion: "Keep tracking your expenses to stay within your budget."
+      });
     }
 
     // 2. Category-wise Analysis (Monthly)
@@ -150,7 +158,7 @@ exports.getSpendingInsights = async (req, res) => {
       const previous = lastMonthCatTotals[cat] || 0;
 
       if (previous > 0) {
-        const diff = ((current - previous) / previous) * 100;
+        const diff = Math.min(((current - previous) / previous) * 100, 100);
         if (diff > 20) {
           insights.push({
             type: "info",
@@ -161,13 +169,23 @@ exports.getSpendingInsights = async (req, res) => {
       }
     });
 
+    const sortedCats = Object.entries(thisMonthCatTotals).sort((a,b) => b[1] - a[1]);
+    if (sortedCats.length > 0) {
+      const topCat = sortedCats[0];
+      insights.push({
+         type: "warning",
+         message: `Your highest spending category this month is ${topCat[0].charAt(0).toUpperCase() + topCat[0].slice(1)} (₹${topCat[1].toLocaleString('en-IN', { maximumFractionDigits: 2 })}).`,
+         suggestion: `Consider reviewing your ${topCat[0]} expenses.`
+      });
+    }
+
     // 3. Weekly Trend & Category Spikes
     const thisWeekTotal = thisWeekExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
     const lastWeekTotal = lastWeekExpenses.filter(e => e.type !== 'income').reduce((sum, e) => sum + e.amount, 0);
 
     // General weekly trend
     if (lastWeekTotal > 0) {
-      const weekDiff = ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+      const weekDiff = Math.min(((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100, 100);
       if (weekDiff > 20) {
         insights.push({
           type: "warning",
@@ -187,7 +205,7 @@ exports.getSpendingInsights = async (req, res) => {
       const previous = lastWeekCatTotals[cat] || 0;
       
       if (current > 0 && previous > 0) {
-        const diff = ((current - previous) / previous) * 100;
+        const diff = Math.min(((current - previous) / previous) * 100, 100);
         if (diff > 25) {
           insights.push({
             type: "warning",
@@ -199,6 +217,20 @@ exports.getSpendingInsights = async (req, res) => {
         }
       }
     });
+
+    const budgets = await Budget.find({ userId, month: currentMonth });
+    const totalBudgetDoc = budgets.find(b => b.category === 'total');
+    if (totalBudgetDoc) {
+      const limit = Number(totalBudgetDoc.limit || totalBudgetDoc.totalBudget);
+      const remaining = limit - thisMonthTotal;
+      if (remaining > 0) {
+        insights.push({
+           type: "success",
+           message: `You have ₹${remaining.toLocaleString('en-IN', { maximumFractionDigits: 2 })} remaining in your overall budget.`,
+           suggestion: "Great job! You are within your budget."
+        });
+      }
+    }
 
     res.json(insights);
 
