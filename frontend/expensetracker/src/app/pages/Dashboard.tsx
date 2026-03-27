@@ -377,20 +377,34 @@ export function DashboardOverview() {
           setTotalSavings(userData.totalSavings || 0);
         }
 
-        // Fetch Spending Insights
-        const insightsRes = await fetch(`${API_BASE_URL}/api/reports/spending-insights?userId=${user.id}`);
-        if (insightsRes.ok) {
-          const insightsData = await insightsRes.json();
-          setInsights(insightsData);
-        }
+      const results = await Promise.allSettled(endpoints);
 
-        // Fetch Financial Health Score
-        const healthRes = await fetch(`${API_BASE_URL}/api/financial-health-score?userId=${user.id}&month=${selectedMonth}`);
-        if (healthRes.ok) {
-          const healthData = await healthRes.json();
-          setHealthScore(healthData);
-        }
+      // Process Expenses
+      if (results[0].status === 'fulfilled' && results[0].value.ok) {
+        setExpenses(await results[0].value.json());
       }
+      // Process Budgets
+      if (results[1].status === 'fulfilled' && results[1].value.ok) {
+        setBudgets(await results[1].value.json());
+      }
+      // Process Alerts
+      if (results[2].status === 'fulfilled' && results[2].value.ok) {
+        setAlerts(await results[2].value.json());
+      }
+      // Process Profile (Total Savings)
+      if (results[3].status === 'fulfilled' && results[3].value.ok) {
+        const userData = await results[3].value.json();
+        setTotalSavings(userData.totalSavings || 0);
+      }
+      // Process Spending Insights
+      if (results[4].status === 'fulfilled' && results[4].value.ok) {
+        setInsights(await results[4].value.json());
+      }
+      // Process Financial Health Score
+      if (results[5].status === 'fulfilled' && results[5].value.ok) {
+        setHealthScore(await results[5].value.json());
+      }
+
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -826,7 +840,7 @@ export function DashboardOverview() {
               <option value="7">Last 7d</option>
               <option value="30">Last 30d</option>
               <option value="90">Last 90d</option>
-            </select>
+             </select>
           </div>
           <div className="chart-container" style={{ marginTop: '0.5rem' }}>
             <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px', width: '100%', preserveAspectRatio: 'none' }}>
