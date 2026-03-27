@@ -63,6 +63,10 @@ const budgetSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  initialBudget: {
+    type: Number,
+    default: function() { return this.limit; }
+  },
   totalBudget: {
     type: Number,
     required: true,

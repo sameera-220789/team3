@@ -115,6 +115,7 @@ const receiptRoutes = require("../routes/receiptRoutes");
 const goalRoutes = require("../routes/goalRoutes");
 const adminRoutes = require("../routes/adminRoutes");
 const recurringRoutes = require("../routes/recurringRoutes");
+const incomeRoutes = require("../routes/incomeRoutes");
 const { checkReminders } = require("../services/reminderService");
 
 const { getFinancialHealthScore } = require("../controllers/reportController");
@@ -131,6 +132,7 @@ app.use("/api/receipts", receiptRoutes);
 app.use("/api/goals", goalRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/recurring", recurringRoutes);
+app.use("/api/income", incomeRoutes);
 
 // Recurring Bill Reminders Service (check every 15 mins)
 setInterval(() => {

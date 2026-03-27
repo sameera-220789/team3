@@ -11,6 +11,7 @@ import Dashboard, {
 import Budget from "./pages/Budget";
 import Goals from "./pages/Goals";
 import AddExpense from "./pages/AddExpense";
+import AddIncome from "./pages/AddIncome";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import AdminOverview from "./pages/AdminOverview";
@@ -42,6 +43,7 @@ export function App() {
         <Route path="/budget" element={<Budget />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/add-expense" element={<AddExpense />} />
+        <Route path="/add-income" element={<AddIncome />} />
         <Route path="/profile" element={<Profile />} />
 
         <Route path="/admin" element={<Admin />}>

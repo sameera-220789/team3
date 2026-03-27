@@ -68,8 +68,10 @@ exports.addBudget = async (req, res) => {
     let budget = await Budget.findOne({ category, userId, month: budgetMonth });
 
     if (budget) {
-      // update existing
-      budget.totalBudget = budgetAmount;
+      // update existing — recalculate totalBudget = new initialBudget + any income already added
+      const prevIncomeAdded = budget.totalBudget - (budget.initialBudget || budget.limit);
+      budget.initialBudget = budgetAmount;
+      budget.totalBudget = budgetAmount + Math.max(0, prevIncomeAdded);
       budget.limit = budgetAmount; // sync for legacy
       budget.remainingAmount = budget.totalBudget - budget.spentAmount;
       await budget.save();
@@ -98,6 +100,7 @@ exports.addBudget = async (req, res) => {
       const newBudget = new Budget({
         userId,
         category,
+        initialBudget: budgetAmount,  // preserve the user-set amount
         totalBudget: finalBudget,
         limit: finalBudget, // sync for legacy
         month: budgetMonth,
