@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../utils/config";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
+import GroupChat from "../components/GroupChat";
 
 type BudgetCategoryId =
   | "food"
@@ -69,7 +70,8 @@ export default function Budget() {
   // Modals Data
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
-  const [newGroupMembers, setNewGroupMembers] = useState<string[]>([""]);
+  const [newGroupPassword, setNewGroupPassword] = useState("");
+  const [newGroupMembers, setNewGroupMembers] = useState<{name: string, email: string}[]>([{name: "", email: ""}]);
 
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [splitDesc, setSplitDesc] = useState("");
@@ -323,27 +325,24 @@ export default function Budget() {
   };
 
   const handleCreateGroup = async () => {
-    if (!newGroupName.trim() || newGroupMembers.some(m => !m.trim())) {
-      alert("Please fill all group fields");
+    if (!newGroupName.trim() || !newGroupPassword.trim() || newGroupMembers.some(m => !m.name.trim())) {
+      alert("Please fill group name, password, and at least a name for all members.");
       return;
     }
     try {
       const user = getUser();
       if (!user) return;
       const userName = `${user.firstName} ${user.lastName}`.trim();
-      const currentMembers = newGroupMembers.map(m => m.trim()).filter(Boolean);
-      // Ensure the creator is implicitly in the group logic if not already typed
-      if (!currentMembers.includes(userName)) {
-        currentMembers.push(userName);
-      }
-
+      
       const res = await fetch(`${API_BASE_URL}/api/groups/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupName: newGroupName,
-          members: currentMembers,
-          createdBy: user.id
+          groupPassword: newGroupPassword,
+          membersDetails: newGroupMembers,
+          createdBy: user.id,
+          creatorName: userName
         })
       });
 
@@ -352,7 +351,8 @@ export default function Budget() {
         setGroups([savedGroup, ...groups]);
         setShowCreateGroupModal(false);
         setNewGroupName("");
-        setNewGroupMembers([""]);
+        setNewGroupPassword("");
+        setNewGroupMembers([{name: "", email: ""}]);
         handleGroupSelect(savedGroup._id); // Auto select new group
       } else {
         alert("Failed to create group");
@@ -1048,9 +1048,20 @@ export default function Budget() {
               </div>
 
               {activeGroupId ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' }}>
+                <>
+                  <div style={{ marginBottom: "20px", display: "flex", gap: "10px", alignItems: "center", background: "var(--color-primary-light)", padding: "16px", borderRadius: "8px", color: "white", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span style={{fontWeight: 600, fontSize: "1.05rem"}}>Group ID: </span>
+                    <code style={{padding: "6px 12px", background: "rgba(255,255,255,0.2)", borderRadius: "6px", fontSize: "1.1rem", fontWeight: "bold", letterSpacing: "1px"}}>{groups.find(g => g._id === activeGroupId)?.groupId || "Legacy Group"}</code>
+                    <span style={{fontSize: "0.9rem", opacity: 0.9, marginLeft: "10px"}}>(Share this ID & password for guests to securely join)</span>
+                  </div>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px', alignItems: 'start' }}>
 
-                  {/* Left side: Group Expenses Table */}
+                    {/* Left Column: Expenses Table & Balances */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                      
+                      {/* Expenses Table */}
                   <div className="card" style={{ padding: '20px' }}>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px', color: 'var(--color-gray-900)' }}>Group Expenses</h3>
                     <div className="table-wrapper">
@@ -1148,9 +1159,17 @@ export default function Budget() {
                         </div>
                       )}
                     </div>
-                  </div>
+                      </div>
 
-                </div>
+                    </div>
+
+                    {/* Right Column: Group Chat */}
+                    <div className="card" style={{ padding: '0', background: 'transparent', position: 'sticky', top: '24px' }}>
+                      <GroupChat groupId={activeGroupId} />
+                    </div>
+
+                  </div>
+                </>
               ) : (
                 <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--color-gray-100)', borderRadius: '12px', border: '1px dashed var(--color-gray-300)' }}>
                   <div style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-gray-200)', color: 'var(--color-gray-500)', marginBottom: '16px' }}>
@@ -1172,7 +1191,7 @@ export default function Budget() {
       {/* CREATE GROUP MODAL */}
       {showCreateGroupModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--color-gray-100)', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-gray-200)' }}>
+          <div style={{ background: 'var(--color-gray-100)', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '520px', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-gray-200)' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '20px', color: 'var(--color-gray-900)' }}>Create New Group</h2>
 
             <div style={{ marginBottom: '16px' }}>
@@ -1186,31 +1205,53 @@ export default function Budget() {
               />
             </div>
 
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Group Password (Required for Guests)</label>
+              <input
+                type="password"
+                value={newGroupPassword}
+                onChange={(e) => setNewGroupPassword(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
+                placeholder="Secure Password"
+              />
+            </div>
+
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Members (Names)</label>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '8px', color: 'var(--color-gray-700)' }}>Members (Name & Email)</label>
               {newGroupMembers.map((member, index) => (
-                <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr auto', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
                   <input
                     type="text"
-                    value={member}
+                    value={member.name}
                     onChange={(e) => {
                       const updated = [...newGroupMembers];
-                      updated[index] = e.target.value;
+                      updated[index].name = e.target.value;
                       setNewGroupMembers(updated);
                     }}
                     style={{ flex: 1, padding: '10px 12px', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
-                    placeholder="Member name"
+                    placeholder="Name"
+                  />
+                  <input
+                    type="email"
+                    value={member.email}
+                    onChange={(e) => {
+                      const updated = [...newGroupMembers];
+                      updated[index].email = e.target.value;
+                      setNewGroupMembers(updated);
+                    }}
+                    style={{ flex: 1.5, padding: '10px 12px', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }}
+                    placeholder="Email (Optional)"
                   />
                   {newGroupMembers.length > 1 && (
                     <button
                       onClick={() => setNewGroupMembers(newGroupMembers.filter((_, i) => i !== index))}
-                      style={{ padding: '8px', background: 'var(--color-gray-200)', color: 'var(--color-gray-600)', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                    >Remove</button>
+                      style={{ padding: '10px', background: 'var(--color-danger-light)', color: 'var(--color-danger)', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                    >X</button>
                   )}
                 </div>
               ))}
               <button
-                onClick={() => setNewGroupMembers([...newGroupMembers, ""])}
+                onClick={() => setNewGroupMembers([...newGroupMembers, {name: "", email: ""}])}
                 style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
               >+ Add Member</button>
             </div>
