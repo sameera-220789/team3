@@ -352,42 +352,47 @@ export function DashboardOverview() {
     try {
       const user = getUser();
       if(!user) return;
+      
       const fetchOpts = { cache: "no-store" as RequestCache };
-      const [expenseRes, budgetRes, alertRes] = await Promise.all([
+      
+      // Use Promise.allSettled so if one endpoint 404s (e.g. no alerts), others still load
+      const endpoints = [
         fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
         fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
-        fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts)
-      ]);
-      
-      if (expenseRes.ok && budgetRes.ok && alertRes.ok) {
-        const expenseData = await expenseRes.json();
-        const budgetData = await budgetRes.json();
-        const alertData = await alertRes.json();
-        setExpenses(expenseData);
-        setBudgets(budgetData);
-        setAlerts(alertData);
+        fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/reports/spending-insights?userId=${user.id}`, fetchOpts),
+        fetch(`${API_BASE_URL}/api/financial-health-score?userId=${user.id}&month=${selectedMonth}`, fetchOpts)
+      ];
 
-        // Fetch user total savings
-        const userRes = await fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`);
-        if (userRes.ok) {
-           const userData = await userRes.json();
-           setTotalSavings(userData.totalSavings || 0);
-        }
+      const results = await Promise.allSettled(endpoints);
 
-        // Fetch Spending Insights
-        const insightsRes = await fetch(`${API_BASE_URL}/api/reports/spending-insights?userId=${user.id}`);
-        if (insightsRes.ok) {
-          const insightsData = await insightsRes.json();
-          setInsights(insightsData);
-        }
-
-        // Fetch Financial Health Score
-        const healthRes = await fetch(`${API_BASE_URL}/api/financial-health-score?userId=${user.id}&month=${selectedMonth}`);
-        if (healthRes.ok) {
-          const healthData = await healthRes.json();
-          setHealthScore(healthData);
-        }
+      // Process Expenses
+      if (results[0].status === 'fulfilled' && results[0].value.ok) {
+        setExpenses(await results[0].value.json());
       }
+      // Process Budgets
+      if (results[1].status === 'fulfilled' && results[1].value.ok) {
+        setBudgets(await results[1].value.json());
+      }
+      // Process Alerts
+      if (results[2].status === 'fulfilled' && results[2].value.ok) {
+        setAlerts(await results[2].value.json());
+      }
+      // Process Profile (Total Savings)
+      if (results[3].status === 'fulfilled' && results[3].value.ok) {
+        const userData = await results[3].value.json();
+        setTotalSavings(userData.totalSavings || 0);
+      }
+      // Process Spending Insights
+      if (results[4].status === 'fulfilled' && results[4].value.ok) {
+        setInsights(await results[4].value.json());
+      }
+      // Process Financial Health Score
+      if (results[5].status === 'fulfilled' && results[5].value.ok) {
+        setHealthScore(await results[5].value.json());
+      }
+
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -787,26 +792,54 @@ export function DashboardOverview() {
              </select>
           </div>
           <div className="chart-container" style={{ marginTop: '0.5rem' }}>
-            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px', width: '100%', preserveAspectRatio: 'none' }}>
-              <defs>
-                <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" style={{ stopColor: "#6366f1" }} />
-                  <stop offset="100%" style={{ stopColor: "#ffffff" }} />
-                </linearGradient>
-                <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" style={{ stopColor: "#6366f1" }} />
-                  <stop offset="100%" style={{ stopColor: "#8b5cf6" }} />
-                </linearGradient>
-              </defs>
-              <path d={areaPath} fill="url(#area-gradient)" opacity="0.3" />
-              <path d={linePath} stroke="url(#line-gradient)" strokeWidth="3" fill="none" />
-              {chartData.length <= 31 && chartData.map((amount, i) => (
-                <circle key={i} cx={i * (600/(chartData.length -1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
-              ))}
-            </svg>
-            <div className="chart-labels" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
-              {chartLabels.slice(0, 3).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
-              {chartLabels.slice(-1).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
+            <div style={{ display: 'flex', gap: '0', alignItems: 'stretch' }}>
+              {/* Y-axis labels */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '28px', width: '44px', flexShrink: 0, alignItems: 'flex-end' }}>
+                {[100, 75, 50, 25, 0].map((pct) => (
+                  <span key={pct} style={{ fontSize: '10px', color: 'var(--color-gray-400)', lineHeight: 1 }}>
+                    {maxSpending > 0 ? (maxSpending * pct / 100 > 999 ? `₹${(maxSpending * pct / 100 / 1000).toFixed(1)}k` : `₹${Math.round(maxSpending * pct / 100)}`) : ''}
+                  </span>
+                ))}
+              </div>
+              {/* Chart area */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '260px', width: '100%' }} preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
+                    </linearGradient>
+                    <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                  {/* Horizontal grid lines at 25%, 50%, 75%, 100% */}
+                  {[0, 25, 50, 75, 100].map((pct) => {
+                    const y = 200 - (pct / 100) * 150;
+                    return (
+                      <line key={pct} x1="0" y1={y} x2="600" y2={y}
+                        stroke="var(--color-gray-200)" strokeWidth="1"
+                        strokeDasharray={pct === 0 ? "none" : "4 4"} opacity="0.7" />
+                    );
+                  })}
+                  <path d={areaPath} fill="url(#area-gradient)" />
+                  <path d={linePath} stroke="url(#line-gradient)" strokeWidth="2.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
+                  {chartData.length <= 31 && chartData.map((amt, i) => (
+                    <circle key={i}
+                      cx={i * (600 / (chartData.length - 1 || 1))}
+                      cy={200 - (amt / maxSpending) * 150}
+                      r={chartData.length <= 7 ? "5" : "3"}
+                      fill="#6366f1" stroke="white" strokeWidth="2"
+                      style={{ cursor: 'pointer' }}
+                    />
+                  ))}
+                </svg>
+                {/* X-axis labels — all 7 labels evenly spaced */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.7rem', color: 'var(--color-gray-400)', paddingLeft: '2px', paddingRight: '2px' }}>
+                  {chartLabels.map((lbl, idx) => <span key={idx} style={{ textAlign: 'center', flex: 1 }}>{lbl}</span>)}
+                </div>
+              </div>
             </div>
           </div>
         </div>

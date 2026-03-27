@@ -47,7 +47,7 @@ exports.addMoneyToGoal = async (req, res) => {
       if (user.totalSavings < amount) {
         return res.status(400).json({ message: "Insufficient total savings" });
       }
-      user.totalSavings -= amount;
+      user.totalSavings = Math.max(0, user.totalSavings - amount);
       await user.save();
     } else if (source === 'unallocated') {
       if (!month) return res.status(400).json({ message: "Month is required for unallocated funding" });
