@@ -774,7 +774,7 @@ export function DashboardOverview() {
       {/* Charts Section - Restructured for 3-column layout */}
       <div className="dashboard-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
         {/* Spending Overview Chart */}
-        <div className="card chart-card">
+        <div className="card chart-card" style={{ gridColumn: 'span 2' }}>
           <div className="card-header-section" style={{ marginBottom: '1.5rem' }}>
             <div>
               <h3 className="card-title">Spending Overview</h3>
@@ -784,10 +784,10 @@ export function DashboardOverview() {
               <option value="7">Last 7d</option>
               <option value="30">Last 30d</option>
               <option value="90">Last 90d</option>
-            </select>
+             </select>
           </div>
           <div className="chart-container" style={{ marginTop: '0.5rem' }}>
-            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px' }}>
+            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px', width: '100%', preserveAspectRatio: 'none' }}>
               <defs>
                 <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" style={{ stopColor: "#6366f1" }} />
@@ -810,17 +810,6 @@ export function DashboardOverview() {
             </div>
           </div>
         </div>
-
-        {/* Financial Health Score (1/3 width) */}
-        {healthScore && (
-          <div className="card" style={{ padding: 0, border: 'none', background: 'transparent' }}>
-            <FinancialHealthScore 
-              score={healthScore.score} 
-              details={healthScore.details} 
-              insight={healthScore.insight} 
-            />
-          </div>
-        )}
 
         {/* Category Distribution (1/3 width) */}
         <div className="card chart-card">

@@ -259,6 +259,15 @@ exports.deleteExpense = async (req, res) => {
       totalBudgetDoc.totalBudget = overallTotal;
       totalBudgetDoc.remainingAmount = overallTotal - totalBudgetDoc.spentAmount;
       await totalBudgetDoc.save();
+
+      // Alert Cleanup: Remove milestone alerts that are > current usage %
+      const usagePercent = overallTotal > 0 ? (totalBudgetDoc.spentAmount / overallTotal) * 100 : 0;
+      await Alert.deleteMany({
+        userId: oldExpense.userId,
+        type: 'milestone',
+        month,
+        threshold: { $gt: usagePercent }
+      });
     }
 
     await Expense.findByIdAndDelete(expenseId);
@@ -349,17 +358,10 @@ exports.autoAddExpense = async (req, res) => {
       const totalBudget = Number(totalBudgetDoc.totalBudget);
       const totalSpentBefore = Number(totalBudgetDoc.spentAmount);
 
-      // 3. Category-wise Budget Protection
+      // 3. Category-wise Budget Protection (No longer blocking for auto-payments)
       const categoryBudget = budgets.find(b => b.category.toLowerCase() === category.toLowerCase());
-      if (categoryBudget && (categoryBudget.spentAmount + expenseAmount > categoryBudget.totalBudget)) {
-         // Auto limits? Let's allow but maybe warn in real life. We will just enforce same as manual
-         return res.status(400).json({ message: `Category budget limit exceeded for ${category}.` });
-      }
 
-      // 4. Prevent Overall Budget From Going Negative
-      if (totalSpentBefore + expenseAmount > totalBudget) {
-        return res.status(400).json({ message: "Overall Budget limit exceeded for this month." });
-      }
+      // 4. Prevent Overall Budget From Going Negative (No longer blocking for auto-payments)
 
       // 4b. Update Wallet Balance (totalSavings)
       if (user.totalSavings == null) user.totalSavings = 0;
