@@ -63,8 +63,8 @@ exports.processPayment = async (req, res) => {
 
     const savedTransaction = await transaction.save();
 
-    // Forwarding logic (Async) - Disabled as per user request to rely purely on Chrome Extension
-    // forwardToExpenseTracker(savedTransaction);
+    // Forwarding logic (Async) - Re-enabled for robust server-to-server syncing
+    forwardToExpenseTracker(savedTransaction);
 
     res.status(201).json({
       message: "Payment processed successfully",

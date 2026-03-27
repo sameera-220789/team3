@@ -192,6 +192,16 @@ export default function PaymentPage() {
       // Deduct Balance
       setSenderProfile((prev) => prev ? { ...prev, balance: prev.balance - Number(amount) } : null);
 
+      // 🔔 Dispatch custom event for Chrome Extension to detect payment success
+      // The extension listens for 'payment:success' and forwards to Smart Expense Tracker
+      window.dispatchEvent(new CustomEvent("payment:success", {
+        detail: {
+          amount: Number(amount),
+          receiver: finalReceiver,
+          category: savedData.category || ""
+        }
+      }));
+
       setTimeout(() => {
         setStep("success");
       }, 3500);
@@ -599,6 +609,10 @@ export default function PaymentPage() {
           </div>
           <div className="success-amount">₹{amount}</div>
           <div className="success-label">Payment Successful</div>
+          <div style={{ color: '#10B981', fontSize: '14px', fontWeight: 600, marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Synced to Smart Expense Tracker
+          </div>
           
           <div className="divider"></div>
           

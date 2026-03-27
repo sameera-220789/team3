@@ -30,19 +30,27 @@ const sendToBackend = async (data) => {
 
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) {
-        console.warn("❌ No JWT token found in session or localStorage. Please log in to Smart Expense Tracker.");
+        console.warn("❌ No JWT token found. Please log in to the Demo Payment App first.");
         return;
     }
 
-    // Get userId from session storage (where the demo app stores it)
+    // Get userId from session storage (where the demo app stores it after login)
     const userStr = sessionStorage.getItem("user") || localStorage.getItem("user");
     let userId = null;
     if (userStr) {
         try {
             const user = JSON.parse(userStr);
             userId = user.id || user._id || user.userId;
-        } catch (e) {}
+            if (userId) userId = String(userId);
+        } catch (e) { console.error(e); }
     }
+
+    if (!userId) {
+        console.warn("❌ No userId found in session. Cannot add expense.");
+        return;
+    }
+
+    console.log("📤 Sending expense to tracker:", { ...data, userId });
 
     try {
         const response = await fetch(API_URL, {
@@ -64,7 +72,8 @@ const sendToBackend = async (data) => {
             showNotification(`₹${data.amount} spent on ${data.description} added to expenses!`);
             lastTx = { amount: data.amount, receiver: data.description, time: now };
         } else {
-            console.error("❌ Failed to add expense:", await response.text());
+            const errText = await response.text();
+            console.error("❌ Failed to add expense:", errText);
         }
     } catch (err) {
         console.error("❌ Network error while adding expense:", err);
@@ -108,16 +117,30 @@ const showNotification = (message) => {
     }, 4000);
 };
 
-// 4. OBSERVER: Detect payment success actions on the page
-// Listening for clicks on 'pay-btn' (simulated page) or 'payment-success-msg' visibility (demo app)
+// 4. PRIMARY LISTENER: Custom event dispatched by React PaymentPage on payment success
+// This is reliable because React fires it directly, no DOM polling needed
+window.addEventListener("payment:success", (e) => {
+    const { amount, receiver } = e.detail || {};
+    if (!amount || !receiver) {
+        console.warn("⚠️ payment:success event missing data", e.detail);
+        return;
+    }
+    console.log("🎯 Caught payment:success event:", { amount, receiver });
+    sendToBackend({
+        amount: Number(amount),
+        description: receiver,
+        category: categorize(receiver)
+    });
+});
 
+// 5. FALLBACK: detect clicks on elements with class .pay-btn (for simulated payment pages)
 document.addEventListener("click", (e) => {
     const btn = e.target.closest(".pay-btn");
     if (btn) {
         const amount = Number(btn.getAttribute("data-amount"));
         const receiver = btn.getAttribute("data-receiver");
         if (amount && receiver) {
-            console.log("💰 Detected payment button click:", { amount, receiver });
+            console.log("💰 Detected .pay-btn click:", { amount, receiver });
             sendToBackend({
                 amount,
                 description: receiver,
@@ -127,28 +150,33 @@ document.addEventListener("click", (e) => {
     }
 });
 
-// For the Demo Payment App, we can observe the presence of the success message
+// 6. SECONDARY FALLBACK: MutationObserver for #payment-success-msg (legacy / simulated pages)
 const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
         if (mutation.type === "childList") {
-            const successMsg = document.getElementById("payment-success-msg");
-            if (successMsg) {
-                const amount = Number(successMsg.getAttribute("data-amount"));
-                const receiver = successMsg.getAttribute("data-receiver");
-                
-                // We ensure we only trigger this ONCE per success page display
-                if (amount && receiver && !successMsg.hasAttribute("data-extension-detected")) {
-                    successMsg.setAttribute("data-extension-detected", "true");
-                    console.log("🎯 Detected Success Screen:", { amount, receiver });
-                    sendToBackend({
-                        amount,
-                        description: receiver,
-                        category: categorize(receiver)
-                    });
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType !== 1) return;
+                // Check the node itself or any descendant
+                const successMsg = node.id === "payment-success-msg"
+                    ? node
+                    : node.querySelector && node.querySelector("#payment-success-msg");
+                if (successMsg && !successMsg.hasAttribute("data-extension-detected")) {
+                    const amount = Number(successMsg.getAttribute("data-amount"));
+                    const receiver = successMsg.getAttribute("data-receiver");
+                    if (amount && receiver) {
+                        successMsg.setAttribute("data-extension-detected", "true");
+                        console.log("🔍 MutationObserver detected #payment-success-msg:", { amount, receiver });
+                        sendToBackend({
+                            amount,
+                            description: receiver,
+                            category: categorize(receiver)
+                        });
+                    }
                 }
-            }
+            });
         }
     }
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
+console.log("👀 MutationObserver active on document.body");

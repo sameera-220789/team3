@@ -352,8 +352,11 @@ export function DashboardOverview() {
     try {
       const user = getUser();
       if (!user) return;
+
       const fetchOpts = { cache: "no-store" as RequestCache };
-      const [expenseRes, budgetRes, alertRes] = await Promise.all([
+
+      // Use Promise.allSettled so if one endpoint 404s (e.g. no alerts), others still load
+      const endpoints = [
         fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
         fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
         fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts)
@@ -826,14 +829,7 @@ export function DashboardOverview() {
             </select>
           </div>
           <div className="chart-container" style={{ marginTop: '0.5rem' }}>
-            <svg
-              ref={chartSvgRef}
-              className="line-chart"
-              viewBox="0 0 600 250"
-              style={{ height: '180px', cursor: 'crosshair' }}
-              onMouseMove={handleChartMouseMove}
-              onMouseLeave={() => setChartHover(null)}
-            >
+            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px', width: '100%', preserveAspectRatio: 'none' }}>
               <defs>
                 <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" style={{ stopColor: "#6366f1" }} />
@@ -843,89 +839,14 @@ export function DashboardOverview() {
                   <stop offset="0%" style={{ stopColor: "#6366f1" }} />
                   <stop offset="100%" style={{ stopColor: "#8b5cf6" }} />
                 </linearGradient>
-                <linearGradient id="income-area-gradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" style={{ stopColor: "#10b981" }} />
-                  <stop offset="100%" style={{ stopColor: "#ffffff" }} />
-                </linearGradient>
               </defs>
-
-              {/* Expense area + line */}
-              <path d={areaPath} fill="url(#area-gradient)" opacity="0.2" />
+              <path d={areaPath} fill="url(#area-gradient)" opacity="0.3" />
               <path d={linePath} stroke="url(#line-gradient)" strokeWidth="3" fill="none" />
               {chartData.length <= 31 && chartData.map((amount, i) => (
-                <circle key={`exp-${i}`} cx={i * (600 / (chartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "4" : "2.5"} fill="#6366f1" />
+                <circle key={i} cx={i * (600 / (chartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
               ))}
-
-              {/* Income line */}
-              <path d={incomePath} stroke="#10b981" strokeWidth="2.5" fill="none" strokeDasharray="none" />
-              {incomeChartData.length <= 31 && incomeChartData.map((amount, i) => (
-                <circle key={`inc-${i}`} cx={i * (600 / (incomeChartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={incomeChartData.length <= 7 ? "4" : "2.5"} fill="#10b981" />
-              ))}
-
-              {/* Hover crosshair + tooltip */}
-              {chartHover && (() => {
-                const expAmt = chartData[chartHover.idx] || 0;
-                const incAmt = incomeChartData[chartHover.idx] || 0;
-                const incY = 200 - (incAmt / maxSpending) * 150;
-                const isIncomeHigher = incAmt > expAmt;
-                return (
-                  <>
-                    {/* vertical guide */}
-                    <line x1={chartHover.x} y1="0" x2={chartHover.x} y2="230" stroke="var(--color-gray-300)" strokeWidth="1" strokeDasharray="4 3" />
-                    {/* expense dot highlight */}
-                    <circle cx={chartHover.x} cy={chartHover.y} r="6" fill="#6366f1" opacity="0.9" />
-                    {/* income dot highlight */}
-                    <circle cx={chartHover.x} cy={incY} r="6" fill="#10b981" opacity="0.9" />
-                    {/* tooltip box */}
-                    <foreignObject
-                      x={Math.min(chartHover.x + 8, 430)}
-                      y={Math.max(chartHover.y - 55, 0)}
-                      width="160"
-                      height="60"
-                    >
-                      <div
-                        style={{
-                          background: 'rgba(17,24,39,0.88)',
-                          backdropFilter: 'blur(6px)',
-                          borderRadius: '8px',
-                          padding: '6px 10px',
-                          fontSize: '11px',
-                          color: 'white',
-                          lineHeight: '1.6',
-                          border: isIncomeHigher ? '1px solid #10b981' : '1px solid #6366f1',
-                          pointerEvents: 'none'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', display: 'inline-block' }} />
-                          <span style={{ color: '#c4b5fd' }}>Expenses</span>
-                          <span style={{ marginLeft: 'auto', fontWeight: 700 }}>₹{expAmt.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                          <span style={{ color: '#6ee7b7' }}>Income</span>
-                          <span style={{ marginLeft: 'auto', fontWeight: 700 }}>₹{incAmt.toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-                    </foreignObject>
-                  </>
-                );
-              })()}
             </svg>
-
-            {/* Legend */}
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--color-gray-600)' }}>
-                <span style={{ width: 16, height: 3, background: '#6366f1', borderRadius: 2, display: 'inline-block' }} />
-                Expenses
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--color-gray-600)' }}>
-                <span style={{ width: 16, height: 3, background: '#10b981', borderRadius: 2, display: 'inline-block' }} />
-                Income
-              </div>
-            </div>
-
-            <div className="chart-labels" style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+            <div className="chart-labels" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
               {chartLabels.slice(0, 3).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
               {chartLabels.slice(-1).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
             </div>

@@ -174,7 +174,7 @@ exports.updateProfile = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (totalSavings !== undefined) {
-      user.totalSavings = Number(totalSavings);
+      user.totalSavings = Math.max(0, Number(totalSavings));
     }
 
     await user.save();
