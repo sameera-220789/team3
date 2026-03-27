@@ -21,6 +21,7 @@ import AdminCategories from "./pages/AdminCategories";
 import AdminLogs from "./pages/AdminLogs";
 import AdminTransactions from "./pages/AdminTransactions";
 import Profile from "./pages/Profile";
+import GuestGroupView from "./pages/GuestGroupView";
 
 export function App() {
   return (
@@ -45,6 +46,7 @@ export function App() {
         <Route path="/add-expense" element={<AddExpense />} />
         <Route path="/add-income" element={<AddIncome />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/guest/group/:id" element={<GuestGroupView />} />
 
         <Route path="/admin" element={<Admin />}>
           <Route index element={<AdminOverview />} />

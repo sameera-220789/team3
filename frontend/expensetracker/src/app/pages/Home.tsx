@@ -1,7 +1,37 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../utils/config";
 import { ThemeToggle } from "../components/ThemeToggle";
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinData, setJoinData] = useState({ groupId: "", groupPassword: "", guestName: "" });
+  const [joinError, setJoinError] = useState("");
+
+  const handleJoinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setJoinError("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/groups/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(joinData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem(`guestToken_${data.group._id}`, data.guestToken);
+        localStorage.setItem(`guestName_${data.group._id}`, joinData.guestName);
+        setShowJoinModal(false);
+        navigate(`/guest/group/${data.group._id}`);
+      } else {
+        setJoinError(data.message || "Failed to join group");
+      }
+    } catch (err) {
+      setJoinError("Network error. Please try again.");
+    }
+  };
+
   return (
     <>
       <nav className="navbar">
@@ -41,6 +71,15 @@ export default function Home() {
               <a href="#pricing" className="nav-link">
                 Pricing
               </a>
+            </li>
+            <li>
+              <button 
+                onClick={() => setShowJoinModal(true)} 
+                className="nav-link" 
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '1rem', color: 'var(--color-gray-600)', padding: '0.5rem 0' }}
+              >
+                Join Group (Guest)
+              </button>
             </li>
             <li>
               <Link to="/login" className="nav-link">
@@ -526,6 +565,39 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {showJoinModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--color-gray-100)', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-gray-200)', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'spaceBetween', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-gray-900)' }}>Join Group as Guest</h2>
+              <button 
+                onClick={() => setShowJoinModal(false)}
+                style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--color-gray-500)' }}
+              >×</button>
+            </div>
+            <form onSubmit={handleJoinSubmit}>
+              {joinError && <div style={{ background: 'var(--color-danger-light)', color: 'var(--color-danger)', padding: '10px', borderRadius: '6px', marginBottom: "1rem" }}>{joinError}</div>}
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Group ID</label>
+                <input type="text" style={{ width: '100%', padding: '10px 12px', boxSizing: 'border-box', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }} required value={joinData.groupId} onChange={e => setJoinData({...joinData, groupId: e.target.value})} placeholder="e.g. EXP-A1B2C3" />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Your Name</label>
+                <input type="text" style={{ width: '100%', padding: '10px 12px', boxSizing: 'border-box', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }} required value={joinData.guestName} onChange={e => setJoinData({...joinData, guestName: e.target.value})} placeholder="Guest Name" />
+              </div>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '6px', color: 'var(--color-gray-700)' }}>Group Password</label>
+                <input type="password" style={{ width: '100%', padding: '10px 12px', boxSizing: 'border-box', border: '1px solid var(--color-gray-300)', borderRadius: '6px', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)' }} required value={joinData.groupPassword} onChange={e => setJoinData({...joinData, groupPassword: e.target.value})} placeholder="Password" />
+              </div>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <button type="button" style={{ padding: '8px 16px', border: '1px solid var(--color-gray-300)', background: 'var(--color-gray-100)', color: 'var(--color-gray-700)', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }} onClick={() => setShowJoinModal(false)}>Cancel</button>
+                <button type="submit" style={{ padding: '8px 16px', border: 'none', background: 'var(--color-primary)', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}>Join</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

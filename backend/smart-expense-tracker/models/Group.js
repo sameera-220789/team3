@@ -5,6 +5,14 @@ const groupSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  groupId: {
+    type: String,
+    unique: true
+  },
+  groupPassword: {
+    type: String,
+    required: true
+  },
   members: {
     type: [String], // Array of names or emails
     required: true

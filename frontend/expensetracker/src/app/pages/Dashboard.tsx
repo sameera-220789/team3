@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { getUser } from "../utils/api";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { 
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, 
+import {
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line
 } from 'recharts';
 import { API_BASE_URL } from "../utils/config";
@@ -24,12 +24,12 @@ const categoryColors: Record<string, string> = {
 };
 
 const getCategoryColor = (cat: string, idx: number) => {
-  const fallbacks = ['#6366F1','#8B5CF6','#EC4899','#F59E0B','#10B981','#3B82F6','#F97316','#94A3B8'];
+  const fallbacks = ['#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#3B82F6', '#F97316', '#94A3B8'];
   return categoryColors[cat] || fallbacks[idx % fallbacks.length];
 };
 
 const getCategoryTheme = (category: string) => {
-  switch(category?.toLowerCase()) {
+  switch (category?.toLowerCase()) {
     case 'food': return 'food';
     case 'travel': return 'travel';
     case 'shopping': return 'shopping';
@@ -63,7 +63,7 @@ export default function Dashboard() {
     setSelectedMonth(newMonth);
     localStorage.setItem("selectedMonth", newMonth);
   };
-  
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -96,25 +96,25 @@ export default function Dashboard() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo">
-  <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="12" fill="url(#expense-logo-bg2)" />
-    <path d="M12 28L18 20L22 24L28 14" stroke="url(#expense-logo-line2)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="28" cy="14" r="3" fill="#ffffff" />
-    <path d="M12 14L12 28L28 28" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <defs>
-      <linearGradient id="expense-logo-bg2" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#4F46E5" />
-        <stop offset="50%" stopColor="#7C3AED" />
-        <stop offset="100%" stopColor="#DB2777" />
-      </linearGradient>
-      <linearGradient id="expense-logo-line2" x1="12" y1="28" x2="28" y2="14" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#A78BFA" />
-        <stop offset="100%" stopColor="#FDF4FF" />
-      </linearGradient>
-    </defs>
-  </svg>
-  <span className="logo-text">ExpenseFlow</span>
-</div>
+            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="12" fill="url(#expense-logo-bg2)" />
+              <path d="M12 28L18 20L22 24L28 14" stroke="url(#expense-logo-line2)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="28" cy="14" r="3" fill="#ffffff" />
+              <path d="M12 14L12 28L28 28" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <defs>
+                <linearGradient id="expense-logo-bg2" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#4F46E5" />
+                  <stop offset="50%" stopColor="#7C3AED" />
+                  <stop offset="100%" stopColor="#DB2777" />
+                </linearGradient>
+                <linearGradient id="expense-logo-line2" x1="12" y1="28" x2="28" y2="14" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#A78BFA" />
+                  <stop offset="100%" stopColor="#FDF4FF" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span className="logo-text">ExpenseFlow</span>
+          </div>
         </div>
         <nav className="sidebar-nav">
           <NavLink
@@ -151,7 +151,7 @@ export default function Dashboard() {
           </Link>
           <Link to="/goals" className="sidebar-link">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-               <path d="M12 20L18 12C18 12 21 8.5 21 6.5C21 4.01472 18.9853 2 16.5 2C14.7317 2 13.1979 3.01831 12.5 4.54275C11.8021 3.01831 10.2683 2 8.5 2C6.01472 2 4 4.01472 4 6.5C4 8.5 7 12 7 12L12 20ZM12 20V22M8 22H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M12 20L18 12C18 12 21 8.5 21 6.5C21 4.01472 18.9853 2 16.5 2C14.7317 2 13.1979 3.01831 12.5 4.54275C11.8021 3.01831 10.2683 2 8.5 2C6.01472 2 4 4.01472 4 6.5C4 8.5 7 12 7 12L12 20ZM12 20V22M8 22H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <span>Goals & Reminders</span>
           </Link>
@@ -204,21 +204,21 @@ export default function Dashboard() {
             <h1 className="budget-page-title">{getPageTitle()}</h1>
             <p className="budget-page-subtitle">{getPageSubtitle()}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
-              <button 
+              <button
                 onClick={() => navigateMonth(-1)}
                 className="month-nav-btn"
                 style={{ height: '24px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', background: 'var(--color-gray-100)', border: '1px solid var(--color-gray-200)', cursor: 'pointer', fontSize: '11px', fontWeight: 500, color: 'var(--color-gray-700)' }}
               >
                 Prev
               </button>
-              <button 
+              <button
                 onClick={setPresentMonth}
                 className="month-nav-btn"
                 style={{ height: '24px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', background: 'var(--color-primary-light)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
               >
                 Today
               </button>
-              <button 
+              <button
                 onClick={() => navigateMonth(1)}
                 className="month-nav-btn"
                 style={{ height: '24px', padding: '0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', background: 'var(--color-gray-100)', border: '1px solid var(--color-gray-200)', cursor: 'pointer', fontSize: '11px', fontWeight: 500, color: 'var(--color-gray-700)' }}
@@ -231,8 +231,8 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="budget-header-right">
-            <button 
-              className="icon-btn" 
+            <button
+              className="icon-btn"
               onClick={() => setShowCalendar(true)}
               style={{ padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-gray-100)', border: '1px solid var(--color-gray-200)' }}
               title="View Spending Calendar"
@@ -260,20 +260,20 @@ export default function Dashboard() {
                   backgroundColor: 'var(--color-popover)', borderRadius: '8px', boxShadow: 'var(--shadow-lg)',
                   zIndex: 100, padding: '4px', minWidth: '140px', border: '1px solid var(--color-border)', overflow: 'hidden'
                 }}>
-                  <button 
+                  <button
                     style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: 'var(--color-popover-foreground)' }}
                     onClick={() => {
-                       window.open(`${API_BASE_URL}/api/reports/download/pdf?userId=${user.id}&month=${selectedMonth}`, '_blank');
-                       setShowExportMenu(false);
+                      window.open(`${API_BASE_URL}/api/reports/download/pdf?userId=${user.id}&month=${selectedMonth}`, '_blank');
+                      setShowExportMenu(false);
                     }}
                   >
                     Download PDF
                   </button>
-                  <button 
+                  <button
                     style={{ width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', color: 'var(--color-popover-foreground)' }}
                     onClick={() => {
-                        window.open(`${API_BASE_URL}/api/reports/download/csv?userId=${user.id}&month=${selectedMonth}`, '_blank');
-                        setShowExportMenu(false);
+                      window.open(`${API_BASE_URL}/api/reports/download/csv?userId=${user.id}&month=${selectedMonth}`, '_blank');
+                      setShowExportMenu(false);
                     }}
                   >
                     Download CSV
@@ -309,9 +309,9 @@ export default function Dashboard() {
           <Outlet context={{ selectedMonth }} />
         </div>
         {showCalendar && (
-          <SpendingCalendar 
-            initialMonth={selectedMonth} 
-            onClose={() => setShowCalendar(false)} 
+          <SpendingCalendar
+            initialMonth={selectedMonth}
+            onClose={() => setShowCalendar(false)}
           />
         )}
       </main>
@@ -351,19 +351,31 @@ export function DashboardOverview() {
   const fetchDashboardData = async () => {
     try {
       const user = getUser();
-      if(!user) return;
-      
+      if (!user) return;
+
       const fetchOpts = { cache: "no-store" as RequestCache };
-      
+
       // Use Promise.allSettled so if one endpoint 404s (e.g. no alerts), others still load
       const endpoints = [
         fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
         fetch(`${API_BASE_URL}/api/budgets?userId=${user.id}&month=${selectedMonth}`, fetchOpts),
-        fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts),
-        fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`, fetchOpts),
-        fetch(`${API_BASE_URL}/api/reports/spending-insights?userId=${user.id}`, fetchOpts),
-        fetch(`${API_BASE_URL}/api/financial-health-score?userId=${user.id}&month=${selectedMonth}`, fetchOpts)
-      ];
+        fetch(`${API_BASE_URL}/api/alerts?userId=${user.id}`, fetchOpts)
+      ]);
+
+      if (expenseRes.ok && budgetRes.ok && alertRes.ok) {
+        const expenseData = await expenseRes.json();
+        const budgetData = await budgetRes.json();
+        const alertData = await alertRes.json();
+        setExpenses(expenseData);
+        setBudgets(budgetData);
+        setAlerts(alertData);
+
+        // Fetch user total savings
+        const userRes = await fetch(`${API_BASE_URL}/api/auth/profile?userId=${user.id}`);
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setTotalSavings(userData.totalSavings || 0);
+        }
 
       const results = await Promise.allSettled(endpoints);
 
@@ -411,14 +423,14 @@ export function DashboardOverview() {
     const fetchChartData = async () => {
       try {
         const user = getUser();
-        if(!user) return;
+        if (!user) return;
         const res = await fetch(`${API_BASE_URL}/api/expenses?userId=${user.id}&range=${chartRange}`, { cache: "no-store" as RequestCache });
         if (res.ok) setChartExpenses(await res.json());
       } catch (err) {
         console.error("Error fetching chart data:", err);
       }
     };
-    
+
     fetchChartData();
     const interval = setInterval(fetchChartData, 30000);
     return () => clearInterval(interval);
@@ -434,13 +446,13 @@ export function DashboardOverview() {
     try {
       const user = getUser();
       if (!user) return;
-      
+
       const response = await fetch(`${API_BASE_URL}/api/budgets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, category: 'total', limit: numericValue })
       });
-      
+
       if (response.ok) {
         setEditingTotalBudget(false);
         fetchDashboardData(); // Refresh to get the new total budget
@@ -472,7 +484,7 @@ export function DashboardOverview() {
   const C = 502.65; // Circumference for r=80
   let offsetAccumulator = 0;
 
-  const [tooltipData, setTooltipData] = useState<{show: boolean, name: string, amount: number, x: number, y: number}>({ show: false, name: '', amount: 0, x: 0, y: 0 });
+  const [tooltipData, setTooltipData] = useState<{ show: boolean, name: string, amount: number, x: number, y: number }>({ show: false, name: '', amount: 0, x: 0, y: 0 });
 
   const getDonutProps = (amount: number, categoryName: string) => {
     if (totalExpenses === 0) return {};
@@ -510,18 +522,18 @@ export function DashboardOverview() {
     props: getDonutProps(amt, cat)
   }));
 
-  // Dynamic Line Chart (7 / 30 / 90 Days)
+  // Dynamic Line Chart (7 / 30 / 90 Days) — Expenses
   const days = parseInt(chartRange, 10);
   const chartData = React.useMemo(() => {
     const data = new Array(days).fill(0);
     const today = new Date();
     today.setHours(23, 59, 59, 999);
-    
+
     chartExpenses.filter(e => e.type !== 'income').forEach(exp => {
       const expDate = new Date(exp.date || exp.createdAt);
       const diffTime = today.getTime() - expDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays >= 0 && diffDays < days) {
         const idx = days - 1 - diffDays;
         data[idx] += exp.amount;
@@ -530,35 +542,74 @@ export function DashboardOverview() {
     return data;
   }, [chartExpenses, chartRange]);
 
-  const maxSpending = Math.max(...chartData, 1);
-  const getPathData = (data: number[]) => {
+  // Income data for the same time range
+  const incomeChartData = React.useMemo(() => {
+    const data = new Array(days).fill(0);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    chartExpenses.filter(e => e.type === 'income').forEach(inc => {
+      const incDate = new Date(inc.date || inc.createdAt);
+      const diffTime = today.getTime() - incDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 0 && diffDays < days) {
+        const idx = days - 1 - diffDays;
+        data[idx] += inc.amount;
+      }
+    });
+    return data;
+  }, [chartExpenses, chartRange]);
+
+  // Shared Y-axis max across both lines
+  const maxSpending = Math.max(...chartData, ...incomeChartData, 1);
+  const getPathData = (data: number[], maxVal: number) => {
     if (data.length === 0) return { path: "", areaPath: "" };
-    if (data.length === 1) return { path: `M 0 ${200 - (data[0]/maxSpending)*150}`, areaPath: "" };
-    
+    if (data.length === 1) return { path: `M 0 ${200 - (data[0] / maxVal) * 150}`, areaPath: "" };
+
     let path = "";
     let areaPath = "";
     const stepX = 600 / (data.length - 1);
-    
+
     for (let i = 0; i < data.length; i++) {
-       const x = i * stepX;
-       const y = 200 - (data[i] / maxSpending) * 150;
-       if (i === 0) {
-           path += `M 0 ${y}`;
-           areaPath += `M 0 ${y}`;
-       } else {
-           const prevX = (i - 1) * stepX;
-           const prevY = 200 - (data[i - 1] / maxSpending) * 150;
-           const cp1X = prevX + stepX / 2;
-           const cp2X = x - stepX / 2;
-           path += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
-           areaPath += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
-       }
+      const x = i * stepX;
+      const y = 200 - (data[i] / maxVal) * 150;
+      if (i === 0) {
+        path += `M 0 ${y}`;
+        areaPath += `M 0 ${y}`;
+      } else {
+        const prevX = (i - 1) * stepX;
+        const prevY = 200 - (data[i - 1] / maxVal) * 150;
+        const cp1X = prevX + stepX / 2;
+        const cp2X = x - stepX / 2;
+        path += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
+        areaPath += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
+      }
     }
     areaPath += ` L 600 250 L 0 250 Z`;
     return { path, areaPath };
   };
 
-  const { path: linePath, areaPath } = getPathData(chartData);
+  const { path: linePath, areaPath } = getPathData(chartData, maxSpending);
+  const { path: incomePath } = getPathData(incomeChartData, maxSpending);
+
+  // Hover state for dual-line tooltip
+  const [chartHover, setChartHover] = React.useState<{ idx: number; x: number; y: number } | null>(null);
+  const chartSvgRef = React.useRef<SVGSVGElement>(null);
+
+  const handleChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = chartSvgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const xRatio = (e.clientX - rect.left) / rect.width;
+    const rawIdx = xRatio * (days - 1);
+    const idx = Math.max(0, Math.min(days - 1, Math.round(rawIdx)));
+    const stepX = 600 / (days - 1 || 1);
+    const svgX = idx * stepX;
+    const expY = 200 - (chartData[idx] / maxSpending) * 150;
+    setChartHover({ idx, x: svgX, y: expY });
+  };
+
 
   const chartLabels = React.useMemo(() => {
     const labels = [];
@@ -577,7 +628,7 @@ export function DashboardOverview() {
     return labels;
   }, [chartRange]);
 
-  if(loading) {
+  if (loading) {
     return <div>Loading dashboard...</div>;
   }
 
@@ -604,176 +655,176 @@ export function DashboardOverview() {
       )}
       {/* Stats Grid */}
       <div className="dashboard-stats-grid">
-            {/* Total Budget Card (New) */}
-            <div className="stat-card full-width" style={totalBudgetLimit === 0 ? { border: '2px dashed var(--color-primary)', background: 'var(--color-primary-light)', opacity: 0.8 } : {}}>
-              <div className="stat-header">
-                <div className="stat-icon-wrapper" style={{background: totalBudgetLimit === 0 ? '#6366f1' : '#EEF2FF', color: totalBudgetLimit === 0 ? 'white' : '#6366F1'}}>
-                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-                    <path d="M16 10V22M20 14H14C13.4696 14 12.9609 14.2107 12.5858 14.5858C12.2107 14.9609 12 15.4696 12 16C12 16.5304 12.2107 17.0391 12.5858 17.4142C12.9609 17.7893 13.4696 18 14 18H18C18.5304 18 19.0391 18.2107 19.4142 18.5858C19.7893 18.9609 20 19.4696 20 20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-                  <span className="stat-label" style={totalBudgetLimit === 0 ? { color: '#4f46e5', fontWeight: 600, fontSize: '1rem' } : { fontSize: '1.1rem', fontWeight: 600 }}>Overall Total Budget</span>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    {totalBudgetLimit > 0 && (
-                      <button 
-                        onClick={() => {
-                          setEditingTotalBudget(true);
-                          setNewTotalBudgetValue(totalBudgetLimit.toString());
-                        }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', padding: '4px' }}
-                        title="Edit Total Budget"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                          <path d="M14 3L17 6L7 16H4V13L14 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {editingTotalBudget ? (
-                <div style={{ display: 'flex', gap: '8px', margin: '14px 0' }}>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newTotalBudgetValue}
-                    onChange={(e) => setNewTotalBudgetValue(e.target.value)}
-                    onBlur={handleSaveTotalBudget}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveTotalBudget();
-                      if (e.key === 'Escape') setEditingTotalBudget(false);
-                    }}
-                    autoFocus
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--color-gray-200)', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)', fontSize: '1.5rem', fontWeight: 700 }}
-                    placeholder="Enter limit"
-                  />
-                  <button onClick={handleSaveTotalBudget} style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '4px', padding: '0 16px', cursor: 'pointer', fontWeight: 600 }}>
-                    Save
-                  </button>
-                </div>
-              ) : totalBudgetLimit === 0 ? (
-                <div style={{ padding: '0.75rem 0', textAlign: 'center' }}>
-                  <p style={{ color: '#4f46e5', fontSize: '1rem', marginBottom: '1rem' }}>You haven't set a budget yet!</p>
-                  <button 
+        {/* Total Budget Card (New) */}
+        <div className="stat-card full-width" style={totalBudgetLimit === 0 ? { border: '2px dashed var(--color-primary)', background: 'var(--color-primary-light)', opacity: 0.8 } : {}}>
+          <div className="stat-header">
+            <div className="stat-icon-wrapper" style={{ background: totalBudgetLimit === 0 ? '#6366f1' : '#EEF2FF', color: totalBudgetLimit === 0 ? 'white' : '#6366F1' }}>
+              <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+                <path d="M16 10V22M20 14H14C13.4696 14 12.9609 14.2107 12.5858 14.5858C12.2107 14.9609 12 15.4696 12 16C12 16.5304 12.2107 17.0391 12.5858 17.4142C12.9609 17.7893 13.4696 18 14 18H18C18.5304 18 19.0391 18.2107 19.4142 18.5858C19.7893 18.9609 20 19.4696 20 20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+              <span className="stat-label" style={totalBudgetLimit === 0 ? { color: '#4f46e5', fontWeight: 600, fontSize: '1rem' } : { fontSize: '1.1rem', fontWeight: 600 }}>Overall Total Budget</span>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {totalBudgetLimit > 0 && (
+                  <button
                     onClick={() => {
                       setEditingTotalBudget(true);
-                      setNewTotalBudgetValue("");
+                      setNewTotalBudgetValue(totalBudgetLimit.toString());
                     }}
-                    style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '0.375rem', padding: '0.75rem 1.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6366f1', padding: '4px' }}
+                    title="Edit Total Budget"
                   >
-                    Set Monthly Budget
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                      <path d="M14 3L17 6L7 16H4V13L14 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
                   </button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
-                  <p className="stat-value" style={{ fontSize: '2rem', marginBottom: 0 }}>
-                    ₹{totalBudgetLimit.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                  </p>
-                  <div className="stat-footer" style={{ flex: '0 1 200px' }}>
-                    <div className="mini-progress" style={{ flex: 1, marginRight: '8px' }}>
-                      <div className="mini-progress-bar" style={{ width: `${utilizationPercent}%`, background: isOverBudget ? '#ef4444' : '#6366f1' }}></div>
-                    </div>
-                    <span className="stat-period" style={{ color: isOverBudget ? '#ef4444' : undefined }}>{utilizationPercent.toFixed(0)}% allocated</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon-wrapper red">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M16 8L12 4L8 8M12 4V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <path d="M3 20H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <span className="stat-label">Total Spent</span>
-              </div>
-              <p className="stat-value">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
-
-              <div className="stat-footer">
-                <span className="stat-change negative">
-                  Actual spending
-                </span>
+                )}
               </div>
             </div>
+          </div>
 
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className={`stat-icon-wrapper ${isOverBudget ? 'red' : 'blue'}`}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <span className="stat-label">Remaining Budget</span>
-              </div>
-              <p className="stat-value" style={{ color: isOverBudget ? '#ef4444' : undefined }}>
-                ₹{remainingBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+          {editingTotalBudget ? (
+            <div style={{ display: 'flex', gap: '8px', margin: '14px 0' }}>
+              <input
+                type="number"
+                min="0"
+                value={newTotalBudgetValue}
+                onChange={(e) => setNewTotalBudgetValue(e.target.value)}
+                onBlur={handleSaveTotalBudget}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveTotalBudget();
+                  if (e.key === 'Escape') setEditingTotalBudget(false);
+                }}
+                autoFocus
+                style={{ flex: 1, padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--color-gray-200)', background: 'var(--color-gray-50)', color: 'var(--color-gray-900)', fontSize: '1.5rem', fontWeight: 700 }}
+                placeholder="Enter limit"
+              />
+              <button onClick={handleSaveTotalBudget} style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '4px', padding: '0 16px', cursor: 'pointer', fontWeight: 600 }}>
+                Save
+              </button>
+            </div>
+          ) : totalBudgetLimit === 0 ? (
+            <div style={{ padding: '0.75rem 0', textAlign: 'center' }}>
+              <p style={{ color: '#4f46e5', fontSize: '1rem', marginBottom: '1rem' }}>You haven't set a budget yet!</p>
+              <button
+                onClick={() => {
+                  setEditingTotalBudget(true);
+                  setNewTotalBudgetValue("");
+                }}
+                style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '0.375rem', padding: '0.75rem 1.5rem', fontWeight: 600, cursor: 'pointer', fontSize: '1rem' }}
+              >
+                Set Monthly Budget
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
+              <p className="stat-value" style={{ fontSize: '2rem', marginBottom: 0 }}>
+                ₹{totalBudgetLimit.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
               </p>
-
-              <div className="stat-footer">
-                <span className="stat-period">Available to spend</span>
+              <div className="stat-footer" style={{ flex: '0 1 200px' }}>
+                <div className="mini-progress" style={{ flex: 1, marginRight: '8px' }}>
+                  <div className="mini-progress-bar" style={{ width: `${utilizationPercent}%`, background: isOverBudget ? '#ef4444' : '#6366f1' }}></div>
+                </div>
+                <span className="stat-period" style={{ color: isOverBudget ? '#ef4444' : undefined }}>{utilizationPercent.toFixed(0)}% allocated</span>
               </div>
             </div>
+          )}
+        </div>
 
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon-wrapper purple">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-                    <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <span className="stat-label">Budget Usage</span>
-              </div>
-              <p className="stat-value">{((totalExpenses / (totalBudgetLimit || 1)) * 100).toFixed(1)}%</p>
-              <div className="stat-footer">
-                <div className="mini-progress" style={{ flex: 1, height: '4px', background: 'var(--color-gray-200)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div className="mini-progress-bar" style={{ width: `${Math.min(100, (totalExpenses / (totalBudgetLimit || 1)) * 100)}%`, background: '#818cf8', height: '100%' }}></div>
-                </div>
-              </div>
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper red">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M16 8L12 4L8 8M12 4V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M3 20H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
             </div>
+            <span className="stat-label">Total Spent</span>
+          </div>
+          <p className="stat-value">₹{totalExpenses.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
 
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className="stat-icon-wrapper green">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 1L12 23M17 5H12.5C11.6716 5 11 5.67157 11 6.5C11 7.32843 11.6716 8 12.5 8H14.5C15.3284 8 16 8.67157 16 9.5C16 10.3284 15.3284 11 14.5 11H11.5C10.6716 11 10 10.3284 10 9.5V8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <rect x="2" y="2" width="20" height="20" rx="10" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                </div>
-                <span className="stat-label">Total Savings</span>
-              </div>
-              <p className="stat-value">₹{totalSavings.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
-              <div className="stat-footer">
-                <span className="stat-period">Accumulated leftover budget</span>
-              </div>
+          <div className="stat-footer">
+            <span className="stat-change negative">
+              Actual spending
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className={`stat-icon-wrapper ${isOverBudget ? 'red' : 'blue'}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
+            <span className="stat-label">Remaining Budget</span>
+          </div>
+          <p className="stat-value" style={{ color: isOverBudget ? '#ef4444' : undefined }}>
+            ₹{remainingBudget.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+          </p>
 
-            <div className="stat-card">
-              <div className="stat-header">
-                <div className={`stat-icon-wrapper ${unallocatedBudget < 0 ? 'red' : 'green'}`}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M19 9L12 3L5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <rect x="5" y="9" width="14" height="12" rx="1" stroke="currentColor" strokeWidth="2" />
-                  </svg>
-                </div>
-                <span className="stat-label">Unallocated Budget</span>
-              </div>
+          <div className="stat-footer">
+            <span className="stat-period">Available to spend</span>
+          </div>
+        </div>
 
-              <p className="stat-value" style={{ color: unallocatedBudget < 0 ? '#ef4444' : undefined }}>
-                {unallocatedBudget < 0 ? '-' : ''}₹{Math.abs(unallocatedBudget).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-              </p>
-
-              <div className="stat-footer">
-                <span className="stat-period" style={{ color: unallocatedBudget < 0 ? '#ef4444' : undefined }}>
-                  ₹{totalCategoryBudget.toLocaleString('en-IN')} allocated to categories
-                </span>
-              </div>
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper purple">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 7V12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
             </div>
+            <span className="stat-label">Budget Usage</span>
+          </div>
+          <p className="stat-value">{((totalExpenses / (totalBudgetLimit || 1)) * 100).toFixed(1)}%</p>
+          <div className="stat-footer">
+            <div className="mini-progress" style={{ flex: 1, height: '4px', background: 'var(--color-gray-200)', borderRadius: '2px', overflow: 'hidden' }}>
+              <div className="mini-progress-bar" style={{ width: `${Math.min(100, (totalExpenses / (totalBudgetLimit || 1)) * 100)}%`, background: '#818cf8', height: '100%' }}></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className="stat-icon-wrapper green">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 1L12 23M17 5H12.5C11.6716 5 11 5.67157 11 6.5C11 7.32843 11.6716 8 12.5 8H14.5C15.3284 8 16 8.67157 16 9.5C16 10.3284 15.3284 11 14.5 11H11.5C10.6716 11 10 10.3284 10 9.5V8.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <rect x="2" y="2" width="20" height="20" rx="10" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </div>
+            <span className="stat-label">Total Savings</span>
+          </div>
+          <p className="stat-value">₹{totalSavings.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</p>
+          <div className="stat-footer">
+            <span className="stat-period">Accumulated leftover budget</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-header">
+            <div className={`stat-icon-wrapper ${unallocatedBudget < 0 ? 'red' : 'green'}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M19 9L12 3L5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M9 21V12H15V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <rect x="5" y="9" width="14" height="12" rx="1" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </div>
+            <span className="stat-label">Unallocated Budget</span>
+          </div>
+
+          <p className="stat-value" style={{ color: unallocatedBudget < 0 ? '#ef4444' : undefined }}>
+            {unallocatedBudget < 0 ? '-' : ''}₹{Math.abs(unallocatedBudget).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+          </p>
+
+          <div className="stat-footer">
+            <span className="stat-period" style={{ color: unallocatedBudget < 0 ? '#ef4444' : undefined }}>
+              ₹{totalCategoryBudget.toLocaleString('en-IN')} allocated to categories
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Charts Section - Restructured for 3-column layout */}
@@ -783,7 +834,7 @@ export function DashboardOverview() {
           <div className="card-header-section" style={{ marginBottom: '1.5rem' }}>
             <div>
               <h3 className="card-title">Spending Overview</h3>
-              <p className="card-subtitle">Spending trend</p>
+              <p className="card-subtitle">Income vs Expense trend</p>
             </div>
             <select className="chart-filter" value={chartRange} onChange={(e) => setChartRange(e.target.value)}>
               <option value="7">Last 7d</option>
@@ -792,54 +843,26 @@ export function DashboardOverview() {
              </select>
           </div>
           <div className="chart-container" style={{ marginTop: '0.5rem' }}>
-            <div style={{ display: 'flex', gap: '0', alignItems: 'stretch' }}>
-              {/* Y-axis labels */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingBottom: '28px', width: '44px', flexShrink: 0, alignItems: 'flex-end' }}>
-                {[100, 75, 50, 25, 0].map((pct) => (
-                  <span key={pct} style={{ fontSize: '10px', color: 'var(--color-gray-400)', lineHeight: 1 }}>
-                    {maxSpending > 0 ? (maxSpending * pct / 100 > 999 ? `₹${(maxSpending * pct / 100 / 1000).toFixed(1)}k` : `₹${Math.round(maxSpending * pct / 100)}`) : ''}
-                  </span>
-                ))}
-              </div>
-              {/* Chart area */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '260px', width: '100%' }} preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
-                    </linearGradient>
-                    <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
-                    </linearGradient>
-                  </defs>
-                  {/* Horizontal grid lines at 25%, 50%, 75%, 100% */}
-                  {[0, 25, 50, 75, 100].map((pct) => {
-                    const y = 200 - (pct / 100) * 150;
-                    return (
-                      <line key={pct} x1="0" y1={y} x2="600" y2={y}
-                        stroke="var(--color-gray-200)" strokeWidth="1"
-                        strokeDasharray={pct === 0 ? "none" : "4 4"} opacity="0.7" />
-                    );
-                  })}
-                  <path d={areaPath} fill="url(#area-gradient)" />
-                  <path d={linePath} stroke="url(#line-gradient)" strokeWidth="2.5" fill="none" strokeLinejoin="round" strokeLinecap="round" />
-                  {chartData.length <= 31 && chartData.map((amt, i) => (
-                    <circle key={i}
-                      cx={i * (600 / (chartData.length - 1 || 1))}
-                      cy={200 - (amt / maxSpending) * 150}
-                      r={chartData.length <= 7 ? "5" : "3"}
-                      fill="#6366f1" stroke="white" strokeWidth="2"
-                      style={{ cursor: 'pointer' }}
-                    />
-                  ))}
-                </svg>
-                {/* X-axis labels — all 7 labels evenly spaced */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.7rem', color: 'var(--color-gray-400)', paddingLeft: '2px', paddingRight: '2px' }}>
-                  {chartLabels.map((lbl, idx) => <span key={idx} style={{ textAlign: 'center', flex: 1 }}>{lbl}</span>)}
-                </div>
-              </div>
+            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px', width: '100%', preserveAspectRatio: 'none' }}>
+              <defs>
+                <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" style={{ stopColor: "#6366f1" }} />
+                  <stop offset="100%" style={{ stopColor: "#ffffff" }} />
+                </linearGradient>
+                <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style={{ stopColor: "#6366f1" }} />
+                  <stop offset="100%" style={{ stopColor: "#8b5cf6" }} />
+                </linearGradient>
+              </defs>
+              <path d={areaPath} fill="url(#area-gradient)" opacity="0.3" />
+              <path d={linePath} stroke="url(#line-gradient)" strokeWidth="3" fill="none" />
+              {chartData.length <= 31 && chartData.map((amount, i) => (
+                <circle key={i} cx={i * (600 / (chartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
+              ))}
+            </svg>
+            <div className="chart-labels" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+              {chartLabels.slice(0, 3).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
+              {chartLabels.slice(-1).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
             </div>
           </div>
         </div>
@@ -860,11 +883,11 @@ export function DashboardOverview() {
                   <circle key={cat} cx="100" cy="100" r="80" fill="none" stroke={color} strokeWidth="36"
                     {...props} transform="rotate(-90 100 100)" style={{ transition: 'stroke-dashoffset 0.5s ease', cursor: 'pointer' }} />
                 ))}
-                <text x="100" y="98" textAnchor="middle" fontSize="24" fontWeight="800" fill="var(--color-gray-900)">₹{(totalExpenses/1000).toFixed(1)}k</text>
+                <text x="100" y="98" textAnchor="middle" fontSize="24" fontWeight="800" fill="var(--color-gray-900)">₹{(totalExpenses / 1000).toFixed(1)}k</text>
                 <text x="100" y="118" textAnchor="middle" fontSize="12" fontWeight="500" fill="var(--color-gray-500)">Total Spent</text>
               </svg>
             </div>
-            
+
             {expenses.length > 0 && activeCategories.length > 0 && (
               <div className="category-legend" style={{
                 display: 'grid',
@@ -882,7 +905,7 @@ export function DashboardOverview() {
                   <div className="legend-item" key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span className="legend-dot" style={{ width: '10px', height: '10px', borderRadius: '50%', background: getCategoryColor(cat, idx), flexShrink: 0 }}></span>
                     <span className="legend-label" style={{ textTransform: 'capitalize', flex: 1, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--color-gray-700)' }}>{cat}</span>
-                    <span className="legend-value" style={{ flexShrink: 0, fontSize: '0.85rem', color: 'var(--color-gray-900)', fontWeight: 600 }}>₹{amt > 999 ? (amt/1000).toFixed(1) + 'k' : amt}</span>
+                    <span className="legend-value" style={{ flexShrink: 0, fontSize: '0.85rem', color: 'var(--color-gray-900)', fontWeight: 600 }}>₹{amt > 999 ? (amt / 1000).toFixed(1) + 'k' : amt}</span>
                   </div>
                 ))}
               </div>
@@ -900,8 +923,8 @@ export function DashboardOverview() {
           <div className="insights-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {insights.length > 0 ? (
               insights.slice(0, 5).map((insight, idx) => (
-                <div key={idx} className={`insight-item ${insight.type}`} style={{ 
-                  padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--color-gray-200)', 
+                <div key={idx} className={`insight-item ${insight.type}`} style={{
+                  padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--color-gray-200)',
                   background: 'var(--color-gray-50)', position: 'relative', overflow: 'hidden'
                 }}>
                   <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: insight.type === 'warning' ? '#ef4444' : '#6366f1' }}></div>
@@ -910,7 +933,7 @@ export function DashboardOverview() {
                 </div>
               ))
             ) : (
-              <div style={{textAlign: "center", padding: "1rem", color: "#6B7280"}}>Calculating insights...</div>
+              <div style={{ textAlign: "center", padding: "1rem", color: "#6B7280" }}>Calculating insights...</div>
             )}
           </div>
         </div>
@@ -933,7 +956,7 @@ export function DashboardOverview() {
                 </div>
               </div>
             )) : (
-              <div style={{textAlign: "center", padding: "1rem", color: "#6B7280"}}>No recent budget alerts.</div>
+              <div style={{ textAlign: "center", padding: "1rem", color: "#6B7280" }}>No recent budget alerts.</div>
             )}
           </div>
         </div>
@@ -966,7 +989,7 @@ export function DashboardOverview() {
                       <span className="transaction-emoji">{getEmoji(exp.category)}</span>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span>{exp.description || 'No Description'}</span>
-                        {exp.type === 'income' && <span style={{fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold'}}>INCOME</span>}
+                        {exp.type === 'income' && <span style={{ fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold' }}>INCOME</span>}
                       </div>
                     </div>
                   </td>
@@ -978,7 +1001,7 @@ export function DashboardOverview() {
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: "center" }}>No expenses recorded yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -1040,7 +1063,7 @@ export function DashboardTransactions() {
                       <span className="transaction-emoji">{getEmoji(exp.category)}</span>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <span>{exp.description || 'No Description'}</span>
-                        {exp.type === 'income' && <span style={{fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold'}}>INCOME</span>}
+                        {exp.type === 'income' && <span style={{ fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold' }}>INCOME</span>}
                       </div>
                     </div>
                   </td>
@@ -1054,7 +1077,7 @@ export function DashboardTransactions() {
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan={5} style={{textAlign: "center"}}>No expenses recorded yet.</td></tr>
+                <tr><td colSpan={5} style={{ textAlign: "center" }}>No expenses recorded yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -1157,10 +1180,10 @@ export function DashboardReports() {
 
       {healthScore && (
         <div style={{ marginBottom: '24px' }}>
-          <FinancialHealthScore 
-            score={healthScore.score} 
-            details={healthScore.details} 
-            insight={healthScore.insight} 
+          <FinancialHealthScore
+            score={healthScore.score}
+            details={healthScore.details}
+            insight={healthScore.insight}
           />
         </div>
       )}
@@ -1226,8 +1249,8 @@ export function DashboardReports() {
                   <td>{new Date(exp.date).toLocaleDateString()}</td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                       <span>{exp.description || 'N/A'}</span>
-                       {exp.type === 'income' && <span style={{fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold'}}>INCOME</span>}
+                      <span>{exp.description || 'N/A'}</span>
+                      {exp.type === 'income' && <span style={{ fontSize: '10px', color: 'var(--color-success)', fontWeight: 'bold' }}>INCOME</span>}
                     </div>
                   </td>
                   <td><span className={`category-badge ${getCategoryTheme(exp.category)}`}>{exp.category}</span></td>
@@ -1243,11 +1266,11 @@ export function DashboardReports() {
 
       <div style={{ display: 'flex', gap: '20px', marginTop: '32px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button onClick={() => handleDownload('pdf')} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
           Download PDF
         </button>
         <button onClick={() => handleDownload('csv')} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
           Download CSV
         </button>
       </div>

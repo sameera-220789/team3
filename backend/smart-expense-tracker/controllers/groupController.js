@@ -1,23 +1,69 @@
 const Group = require("../models/Group");
 const SplitExpense = require("../models/SplitExpense");
+const Message = require("../models/Message");
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { sendGroupInviteEmail } = require("../utils/emailService");
 
 // Create Group
 exports.createGroup = async (req, res) => {
   try {
-    const { groupName, members, createdBy } = req.body;
+    const { groupName, groupPassword, membersDetails, createdBy, creatorName } = req.body;
     
-    if (!groupName || !members || members.length === 0) {
-      return res.status(400).json({ message: "Group name and members are required" });
+    if (!groupName || !membersDetails || membersDetails.length === 0 || !groupPassword) {
+      return res.status(400).json({ message: "Group name, members, and password are required" });
     }
+
+    const finalMembers = [];
+    const inviteEmails = [];
+    
+    if (creatorName && !finalMembers.includes(creatorName)) {
+      finalMembers.push(creatorName);
+    }
+    
+    for (const m of membersDetails) {
+      if (m.name && m.name.trim() && !finalMembers.includes(m.name.trim())) {
+         finalMembers.push(m.name.trim());
+      }
+      if (m.email && m.email.trim()) {
+         const cleanEmail = m.email.trim();
+         if (!finalMembers.includes(cleanEmail)) {
+            finalMembers.push(cleanEmail);
+         }
+         inviteEmails.push(cleanEmail);
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(groupPassword, 10);
+    const generatedGroupId = "EXP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const group = new Group({
       groupName,
-      members,
+      groupId: generatedGroupId,
+      groupPassword: hashedPassword,
+      members: finalMembers,
       createdBy
     });
 
     const savedGroup = await group.save();
-    res.status(201).json(savedGroup);
+    
+    const groupResponse = savedGroup.toObject();
+    delete groupResponse.groupPassword;
+
+    // Send invitations to non-registered emails
+    for (const targetEmail of inviteEmails) {
+      try {
+        const userExists = await User.findOne({ email: targetEmail });
+        if (!userExists) {
+           sendGroupInviteEmail(targetEmail, generatedGroupId, groupPassword, groupName);
+        }
+      } catch (err) {
+        console.error("Error checking user for invite", err);
+      }
+    }
+
+    res.status(201).json(groupResponse);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating group", error });
@@ -197,5 +243,92 @@ exports.getGroupBalance = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error calculating balances", error });
+  }
+};
+
+// Join Group (Guest/Member via secret link)
+exports.joinGroup = async (req, res) => {
+  try {
+    const { groupId, groupPassword, guestName } = req.body;
+
+    if (!groupId || !groupPassword || !guestName) {
+      return res.status(400).json({ message: "Group ID, password, and name are required." });
+    }
+
+    const formattedId = groupId.trim().toUpperCase();
+    const group = await Group.findOne({ groupId: formattedId });
+    if (!group) {
+      return res.status(404).json({ message: "Group not found or incorrect ID." });
+    }
+
+    if (!group.groupPassword) {
+      return res.status(400).json({ message: "This group does not have password-protected guest access enabled." });
+    }
+
+    const isMatch = await bcrypt.compare(groupPassword, group.groupPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid group password." });
+    }
+
+    if (!group.members.includes(guestName)) {
+      group.members.push(guestName);
+      await group.save();
+    }
+
+    const guestToken = jwt.sign(
+      { role: "guest", allowedGroup: group._id.toString(), guestName },
+      process.env.JWT_SECRET || process.env.SESSION_SECRET || "smart_expense_session_secret",
+      { expiresIn: "24h" }
+    );
+
+    res.json({
+      message: "Joined group successfully",
+      guestToken,
+      group: {
+        _id: group._id,
+        groupId: group.groupId,
+        groupName: group.groupName
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error joining group", error });
+  }
+};
+
+// Send Chat Message
+exports.sendChatMessage = async (req, res) => {
+  try {
+    const { id } = req.params; // Document _id of the group
+    const { senderName, senderId, text } = req.body;
+
+    if (!senderName || !text) {
+      return res.status(400).json({ message: "Sender name and text are required." });
+    }
+
+    const message = new Message({
+      groupId: id,
+      senderName,
+      senderId: senderId || null,
+      text
+    });
+
+    const savedMsg = await message.save();
+    res.status(201).json(savedMsg);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error sending message", error });
+  }
+};
+
+// Get Chat Messages
+exports.getChatMessages = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const messages = await Message.find({ groupId: id }).sort({ timestamp: 1 });
+    res.json(messages);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching messages", error });
   }
 };
