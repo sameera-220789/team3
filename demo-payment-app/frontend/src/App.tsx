@@ -2,6 +2,7 @@ import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import PaymentPage from './pages/PaymentPage';
 import HistoryPage from './pages/HistoryPage';
 import AuthCallback from './pages/AuthCallback';
+import LoginPage from './pages/LoginPage';
 import { getUser } from './utils/config';
 
 export default function App() {
@@ -15,53 +16,7 @@ export default function App() {
 
   // Landing Page for unauthenticated users
   if (!user && !isAuthCallback) {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#F9FAFB', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-        <div style={{ width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
-          <svg width="80" height="80" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="16" cy="16" r="16" fill="url(#demo-pay-lg-bg)" />
-          <circle cx="16" cy="16" r="9" stroke="url(#demo-pay-lg-coin)" strokeWidth="1.5" fill="none"/>
-          <path d="M12 11H20M12 14H20M14 14L18 21M12.5 11C12.5 11 12.5 13.2 15.5 14C18.5 14.8 18.5 14 18.5 14" stroke="url(#demo-pay-lg-coin)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <defs>
-            <linearGradient id="demo-pay-lg-bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#6366F1" />
-              <stop offset="100%" stopColor="#A855F7" />
-            </linearGradient>
-            <linearGradient id="demo-pay-lg-coin" x1="7" y1="7" x2="25" y2="25" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#FDE047" />
-              <stop offset="100%" stopColor="#F59E0B" />
-            </linearGradient>
-          </defs>
-        </svg>
-        </div>
-        <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#111827', marginBottom: '12px', letterSpacing: '-0.025em' }}>Demo Payment App</h1>
-        <p style={{ color: '#6B7280', textAlign: 'center', marginBottom: '32px', maxWidth: '320px', fontSize: '16px', lineHeight: '1.5' }}>
-          Experience seamless payments. Connect your Smart Expense Tracker account to get started.
-        </p>
-        <button 
-          onClick={() => window.location.href = 'http://localhost:5173/login?redirect=http://localhost:3001/auth-callback'}
-          style={{ 
-            padding: '16px 32px', 
-            backgroundColor: '#111827', 
-            color: 'white', 
-            borderRadius: '12px', 
-            border: 'none', 
-            fontSize: '16px', 
-            fontWeight: '700', 
-            cursor: 'pointer', 
-            boxShadow: '0 4px 12px rgba(17, 24, 39, 0.25)',
-            transition: 'transform 0.2s ease'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          Log In with Smart Expense Tracker
-        </button>
-        <div style={{ marginTop: '40px', color: '#9CA3AF', fontSize: '12px', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Powered by Smart Expense Tracker
-        </div>
-      </div>
-    );
+    return <LoginPage />;
   }
 
   return (

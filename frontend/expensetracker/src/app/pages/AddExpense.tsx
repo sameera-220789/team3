@@ -10,6 +10,7 @@ export default function AddExpense() {
   const [searchParams] = useSearchParams();
   const expenseIdFromUrl = searchParams.get("id");
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("INR");
   const [category, setCategory] = useState("other");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -130,7 +131,10 @@ export default function AddExpense() {
       ]);
       
       const expenses = expRes.ok ? await expRes.json() : [];
-      if (expRes.ok) setRecentExpenses(expenses);
+      if (expRes.ok) {
+        expenses.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setRecentExpenses(expenses);
+      }
       if (budRes.ok) setBudgets(await budRes.json());
       if (alertRes.ok) setAlerts(await alertRes.json());
 
@@ -165,6 +169,11 @@ export default function AddExpense() {
         return;
       }
       
+      let finalAmount = Number(amount);
+      if (currency === "USD") finalAmount *= 83;
+      else if (currency === "EUR") finalAmount *= 90;
+      else if (currency === "GBP") finalAmount *= 105;
+
       const method = editingExpenseId ? "PUT" : "POST";
       const url = editingExpenseId 
         ? `${API_BASE_URL}/api/expenses/${editingExpenseId}` 
@@ -175,7 +184,7 @@ export default function AddExpense() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
-          amount: Number(amount),
+          amount: finalAmount,
           category,
           date,
           paymentMethod,
@@ -188,6 +197,7 @@ export default function AddExpense() {
       if (response.ok) {
         alert(`Expense ${editingExpenseId ? "updated" : "added"} successfully!`);
         setAmount("");
+        setCurrency("INR");
         setDescription("");
         setReceiptImagePath("");
         setEditingExpenseId(null);
@@ -207,6 +217,7 @@ export default function AddExpense() {
   const handleEdit = (exp: any) => {
     setEditingExpenseId(exp._id);
     setAmount(String(exp.amount));
+    setCurrency("INR");
     setCategory(exp.category || "other");
     setDate(new Date(exp.date || exp.createdAt).toISOString().split("T")[0]);
     setPaymentMethod(exp.paymentMethod || "cash");
@@ -500,8 +511,17 @@ export default function AddExpense() {
                 <form className="expense-form" onSubmit={handleAddExpense}>
                   <div className="form-group">
                     <label htmlFor="amount" className="form-label required">Amount</label>
-                    <div className="amount-input-wrapper">
-                      <span className="currency-symbol">{currentUser?.currency === 'USD' ? '$' : '₹'}</span>
+                    <div className="amount-input-wrapper" style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '8px', overflow: 'hidden' }}>
+                      <select
+                        value={currency}
+                        onChange={(e) => setCurrency(e.target.value)}
+                        style={{ border: 'none', background: 'var(--color-gray-100)', padding: '12px', fontSize: '15px', fontWeight: 600, color: 'var(--color-gray-800)', outline: 'none', cursor: 'pointer', height: '100%', borderRight: '1px solid var(--color-border)' }}
+                      >
+                        <option value="INR">₹ INR</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                        <option value="GBP">£ GBP</option>
+                      </select>
                       <input
                         type="text"
                         id="amount"
@@ -509,6 +529,7 @@ export default function AddExpense() {
                         placeholder="0.00"
                         required
                         value={amount}
+                        style={{ border: 'none', borderRadius: 0, flex: 1, boxShadow: 'none', paddingLeft: '16px' }}
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val === "" || /^\d*\.?\d*$/.test(val)) {
@@ -641,6 +662,7 @@ export default function AddExpense() {
                       <button type="button" className="btn btn-outline btn-large" onClick={() => {
                         setEditingExpenseId(null);
                         setAmount("");
+                        setCurrency("INR");
                         setDescription("");
                         setDate(new Date().toISOString().split("T")[0]);
                       }}>

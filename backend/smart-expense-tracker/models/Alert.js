@@ -23,6 +23,10 @@ const alertSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  month: {
+    type: String,
+    default: null
+  },
   isRead: {
     type: Boolean,
     default: false
