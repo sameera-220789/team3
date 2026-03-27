@@ -505,7 +505,7 @@ export function DashboardOverview() {
     props: getDonutProps(amt, cat)
   }));
 
-  // Dynamic Line Chart (7 / 30 / 90 Days)
+  // Dynamic Line Chart (7 / 30 / 90 Days) — Expenses
   const days = parseInt(chartRange, 10);
   const chartData = React.useMemo(() => {
     const data = new Array(days).fill(0);
@@ -525,10 +525,30 @@ export function DashboardOverview() {
     return data;
   }, [chartExpenses, chartRange]);
 
-  const maxSpending = Math.max(...chartData, 1);
-  const getPathData = (data: number[]) => {
+  // Income data for the same time range
+  const incomeChartData = React.useMemo(() => {
+    const data = new Array(days).fill(0);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    chartExpenses.filter(e => e.type === 'income').forEach(inc => {
+      const incDate = new Date(inc.date || inc.createdAt);
+      const diffTime = today.getTime() - incDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 0 && diffDays < days) {
+        const idx = days - 1 - diffDays;
+        data[idx] += inc.amount;
+      }
+    });
+    return data;
+  }, [chartExpenses, chartRange]);
+
+  // Shared Y-axis max across both lines
+  const maxSpending = Math.max(...chartData, ...incomeChartData, 1);
+  const getPathData = (data: number[], maxVal: number) => {
     if (data.length === 0) return { path: "", areaPath: "" };
-    if (data.length === 1) return { path: `M 0 ${200 - (data[0]/maxSpending)*150}`, areaPath: "" };
+    if (data.length === 1) return { path: `M 0 ${200 - (data[0]/maxVal)*150}`, areaPath: "" };
     
     let path = "";
     let areaPath = "";
@@ -536,13 +556,13 @@ export function DashboardOverview() {
     
     for (let i = 0; i < data.length; i++) {
        const x = i * stepX;
-       const y = 200 - (data[i] / maxSpending) * 150;
+       const y = 200 - (data[i] / maxVal) * 150;
        if (i === 0) {
            path += `M 0 ${y}`;
            areaPath += `M 0 ${y}`;
        } else {
            const prevX = (i - 1) * stepX;
-           const prevY = 200 - (data[i - 1] / maxSpending) * 150;
+           const prevY = 200 - (data[i - 1] / maxVal) * 150;
            const cp1X = prevX + stepX / 2;
            const cp2X = x - stepX / 2;
            path += ` C ${cp1X} ${prevY}, ${cp2X} ${y}, ${x} ${y}`;
@@ -553,7 +573,26 @@ export function DashboardOverview() {
     return { path, areaPath };
   };
 
-  const { path: linePath, areaPath } = getPathData(chartData);
+  const { path: linePath, areaPath } = getPathData(chartData, maxSpending);
+  const { path: incomePath } = getPathData(incomeChartData, maxSpending);
+
+  // Hover state for dual-line tooltip
+  const [chartHover, setChartHover] = React.useState<{ idx: number; x: number; y: number } | null>(null);
+  const chartSvgRef = React.useRef<SVGSVGElement>(null);
+
+  const handleChartMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = chartSvgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const xRatio = (e.clientX - rect.left) / rect.width;
+    const rawIdx = xRatio * (days - 1);
+    const idx = Math.max(0, Math.min(days - 1, Math.round(rawIdx)));
+    const stepX = 600 / (days - 1 || 1);
+    const svgX = idx * stepX;
+    const expY = 200 - (chartData[idx] / maxSpending) * 150;
+    setChartHover({ idx, x: svgX, y: expY });
+  };
+
 
   const chartLabels = React.useMemo(() => {
     const labels = [];
@@ -778,7 +817,7 @@ export function DashboardOverview() {
           <div className="card-header-section" style={{ marginBottom: '1.5rem' }}>
             <div>
               <h3 className="card-title">Spending Overview</h3>
-              <p className="card-subtitle">Spending trend</p>
+              <p className="card-subtitle">Income vs Expense trend</p>
             </div>
             <select className="chart-filter" value={chartRange} onChange={(e) => setChartRange(e.target.value)}>
               <option value="7">Last 7d</option>
@@ -787,7 +826,14 @@ export function DashboardOverview() {
             </select>
           </div>
           <div className="chart-container" style={{ marginTop: '0.5rem' }}>
-            <svg className="line-chart" viewBox="0 0 600 250" style={{ height: '180px' }}>
+            <svg
+              ref={chartSvgRef}
+              className="line-chart"
+              viewBox="0 0 600 250"
+              style={{ height: '180px', cursor: 'crosshair' }}
+              onMouseMove={handleChartMouseMove}
+              onMouseLeave={() => setChartHover(null)}
+            >
               <defs>
                 <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" style={{ stopColor: "#6366f1" }} />
@@ -797,14 +843,89 @@ export function DashboardOverview() {
                   <stop offset="0%" style={{ stopColor: "#6366f1" }} />
                   <stop offset="100%" style={{ stopColor: "#8b5cf6" }} />
                 </linearGradient>
+                <linearGradient id="income-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" style={{ stopColor: "#10b981" }} />
+                  <stop offset="100%" style={{ stopColor: "#ffffff" }} />
+                </linearGradient>
               </defs>
-              <path d={areaPath} fill="url(#area-gradient)" opacity="0.3" />
+
+              {/* Expense area + line */}
+              <path d={areaPath} fill="url(#area-gradient)" opacity="0.2" />
               <path d={linePath} stroke="url(#line-gradient)" strokeWidth="3" fill="none" />
               {chartData.length <= 31 && chartData.map((amount, i) => (
-                <circle key={i} cx={i * (600/(chartData.length -1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "5" : "3"} fill="#6366f1" />
+                <circle key={`exp-${i}`} cx={i * (600/(chartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={chartData.length <= 7 ? "4" : "2.5"} fill="#6366f1" />
               ))}
+
+              {/* Income line */}
+              <path d={incomePath} stroke="#10b981" strokeWidth="2.5" fill="none" strokeDasharray="none" />
+              {incomeChartData.length <= 31 && incomeChartData.map((amount, i) => (
+                <circle key={`inc-${i}`} cx={i * (600/(incomeChartData.length - 1 || 1))} cy={200 - (amount / maxSpending) * 150} r={incomeChartData.length <= 7 ? "4" : "2.5"} fill="#10b981" />
+              ))}
+
+              {/* Hover crosshair + tooltip */}
+              {chartHover && (() => {
+                const expAmt = chartData[chartHover.idx] || 0;
+                const incAmt = incomeChartData[chartHover.idx] || 0;
+                const incY = 200 - (incAmt / maxSpending) * 150;
+                const isIncomeHigher = incAmt > expAmt;
+                return (
+                  <>
+                    {/* vertical guide */}
+                    <line x1={chartHover.x} y1="0" x2={chartHover.x} y2="230" stroke="var(--color-gray-300)" strokeWidth="1" strokeDasharray="4 3" />
+                    {/* expense dot highlight */}
+                    <circle cx={chartHover.x} cy={chartHover.y} r="6" fill="#6366f1" opacity="0.9" />
+                    {/* income dot highlight */}
+                    <circle cx={chartHover.x} cy={incY} r="6" fill="#10b981" opacity="0.9" />
+                    {/* tooltip box */}
+                    <foreignObject
+                      x={Math.min(chartHover.x + 8, 430)}
+                      y={Math.max(chartHover.y - 55, 0)}
+                      width="160"
+                      height="60"
+                    >
+                      <div
+                        style={{
+                          background: 'rgba(17,24,39,0.88)',
+                          backdropFilter: 'blur(6px)',
+                          borderRadius: '8px',
+                          padding: '6px 10px',
+                          fontSize: '11px',
+                          color: 'white',
+                          lineHeight: '1.6',
+                          border: isIncomeHigher ? '1px solid #10b981' : '1px solid #6366f1',
+                          pointerEvents: 'none'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', display: 'inline-block' }} />
+                          <span style={{ color: '#c4b5fd' }}>Expenses</span>
+                          <span style={{ marginLeft: 'auto', fontWeight: 700 }}>₹{expAmt.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                          <span style={{ color: '#6ee7b7' }}>Income</span>
+                          <span style={{ marginLeft: 'auto', fontWeight: 700 }}>₹{incAmt.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    </foreignObject>
+                  </>
+                );
+              })()}
             </svg>
-            <div className="chart-labels" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
+
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--color-gray-600)' }}>
+                <span style={{ width: 16, height: 3, background: '#6366f1', borderRadius: 2, display: 'inline-block' }} />
+                Expenses
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: 'var(--color-gray-600)' }}>
+                <span style={{ width: 16, height: 3, background: '#10b981', borderRadius: 2, display: 'inline-block' }} />
+                Income
+              </div>
+            </div>
+
+            <div className="chart-labels" style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-gray-500)' }}>
               {chartLabels.slice(0, 3).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
               {chartLabels.slice(-1).map((lbl, idx) => <span key={idx}>{lbl}</span>)}
             </div>
