@@ -82,40 +82,33 @@ exports.addExpense = async (req, res) => {
     const totalSpentAfter = totalBudgetDoc.spentAmount;
     const usagePercent = totalBudget > 0 ? (totalSpentAfter / totalBudget) * 100 : 0;
 
-    let alertMsg = "";
-    let threshold = 0;
+    const thresholds = [
+      { level: 50, msg: `You have used 50% of your overall budget for ${expenseMonth}.` },
+      { level: 90, msg: `Warning: You have used 90% of your overall budget for ${expenseMonth}.` },
+      { level: 100, msg: `Your overall budget limit for ${expenseMonth} has been reached.` }
+    ];
 
-    if (usagePercent >= 100) {
-      alertMsg = `Your overall budget limit for ${expenseMonth} has been reached.`;
-      threshold = 100;
-    } else if (usagePercent >= 90) {
-      alertMsg = `Warning: You have used 90% of your overall budget for ${expenseMonth}.`;
-      threshold = 90;
-    } else if (usagePercent >= 50 && usagePercent < 90) {
-      alertMsg = `You have used 50% of your overall budget for ${expenseMonth}.`;
-      threshold = 50;
-    }
+    for (const t of thresholds) {
+      if (usagePercent >= t.level) {
+        const existingAlert = await Alert.findOne({ userId, type: "milestone", threshold: t.level, month: expenseMonth });
+        if (!existingAlert) {
+          const newAlert = new Alert({
+            userId,
+            type: "milestone",
+            threshold: t.level,
+            message: t.msg,
+            category: 'total',
+            month: expenseMonth
+          });
+          await newAlert.save();
 
-    if (alertMsg) {
-      const existingAlert = await Alert.findOne({ userId, type: "milestone", threshold, month: expenseMonth });
-      
-      if (!existingAlert) {
-        const newAlert = new Alert({
-          userId,
-          type: "milestone",
-          threshold,
-          message: alertMsg,
-          category: 'total',
-          month: expenseMonth
-        });
-        await newAlert.save();
-
-        if (user.email) {
-          await sendEmail(
-            user.email,
-            "Budget Alert",
-            alertMsg + ` Total Spent: ₹${totalSpentAfter} / ₹${totalBudget}`
-          );
+          if (user.email) {
+            await sendEmail(
+              user.email,
+              "Budget Alert",
+              t.msg + ` Total Spent: ₹${totalSpentAfter} / ₹${totalBudget}`
+            );
+          }
         }
       }
     }
@@ -365,10 +358,15 @@ exports.autoAddExpense = async (req, res) => {
 
       // 4b. Update Wallet Balance (totalSavings)
       if (user.totalSavings == null) user.totalSavings = 0;
-      if (expenseAmount > user.totalSavings && user.totalSavings >= 0) {
+      
+      // Exempt automated synced transactions from strict wallet blocking
+      // since their native app already validated the funds.
+      const isAutoSync = source === "demo-payment-app" || source === "chrome-extension";
+      
+      if (!isAutoSync && expenseAmount > user.totalSavings && user.totalSavings >= 0) {
         return res.status(400).json({ message: "Insufficient wallet balance." });
       }
-      user.totalSavings -= expenseAmount;
+      user.totalSavings = Math.max(0, user.totalSavings - expenseAmount);
       await user.save();
 
       // Update Budget Stats
@@ -390,19 +388,34 @@ exports.autoAddExpense = async (req, res) => {
       const totalSpentAfter = totalBudgetDoc.spentAmount;
       const usagePercent = totalBudget > 0 ? (totalSpentAfter / totalBudget) * 100 : 0;
 
-      let alertMsg = "";
-      let threshold = 0;
+      const thresholds = [
+        { level: 50, msg: `You have used 50% of your overall budget for ${expenseMonth}.` },
+        { level: 90, msg: `Warning: You have used 90% of your overall budget for ${expenseMonth}.` },
+        { level: 100, msg: `Your overall budget limit for ${expenseMonth} has been reached.` }
+      ];
 
-      if (usagePercent >= 100) { alertMsg = `Your overall budget limit for ${expenseMonth} has been reached.`; threshold = 100; }
-      else if (usagePercent >= 90) { alertMsg = `Warning: You have used 90% of your overall budget for ${expenseMonth}.`; threshold = 90; }
-      else if (usagePercent >= 50 && usagePercent < 90) { alertMsg = `You have used 50% of your overall budget for ${expenseMonth}.`; threshold = 50; }
+      for (const t of thresholds) {
+        if (usagePercent >= t.level) {
+          const existingAlert = await Alert.findOne({ userId, type: "milestone", threshold: t.level, month: expenseMonth });
+          if (!existingAlert) {
+            const newAlert = new Alert({
+              userId,
+              type: "milestone",
+              threshold: t.level,
+              message: t.msg,
+              category: 'total',
+              month: expenseMonth
+            });
+            await newAlert.save();
 
-      if (alertMsg) {
-        const existingAlert = await Alert.findOne({ userId, type: "milestone", threshold, month: expenseMonth });
-        if (!existingAlert) {
-          const newAlert = new Alert({ userId, type: "milestone", threshold, message: alertMsg, category: 'total', month: expenseMonth });
-          await newAlert.save();
-          if (user.email) await sendEmail(user.email, "Budget Alert", alertMsg + ` Total Spent: ₹${totalSpentAfter} / ₹${totalBudget}`);
+            if (user.email) {
+              await sendEmail(
+                user.email,
+                "Budget Alert",
+                t.msg + ` Total Spent: ₹${totalSpentAfter} / ₹${totalBudget}`
+              );
+            }
+          }
         }
       }
     }
