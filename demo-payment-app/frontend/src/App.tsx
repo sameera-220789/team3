@@ -75,25 +75,6 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a
-            href="http://localhost:5173/dashboard"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: 11, color: 'var(--text-secondary)',
-              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
-              padding: '6px 10px', borderRadius: 8,
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid var(--glass-border)',
-              transition: 'all 0.2s'
-            }}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15 3 21 3 21 9" /><path d="M10 14 21 3" />
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            </svg>
-            Dashboard
-          </a>
           <button
             onClick={() => {
               sessionStorage.removeItem('token');

@@ -1,7 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import ChatWindow from './ChatWindow';
 
+const PUBLIC_PATHS = new Set([
+  '/',
+  '/login',
+  '/signup',
+  '/admin-login',
+  '/oauth/callback',
+]);
+
 const ChatbotWidget: React.FC = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   
   // Custom drag logic
@@ -48,9 +58,9 @@ const ChatbotWidget: React.FC = () => {
     if (!isDragging) setIsOpen(!isOpen);
   };
 
-  // Check if token exists, we only show bot for logged in sessions ideally.
   const token = localStorage.getItem('token');
   if (!token) return null;
+  if (PUBLIC_PATHS.has(location.pathname)) return null;
 
   return (
     <div

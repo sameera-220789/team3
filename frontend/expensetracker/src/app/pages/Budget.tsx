@@ -198,10 +198,12 @@ export default function Budget() {
         setBudgetsData(budgets); // raw budget docs
         setAllExpenses(expenses); // all raw expenses for correct totalSpent
 
-        // Calculate spending per category
+        // Normalize category keys so demo-payment (e.g. "Food") matches budget rows ("food")
+        const categoryKey = (c: string | undefined) => (c || "other").toLowerCase();
         const spentByCategory: Record<string, number> = {};
         expenses.filter((exp: any) => exp.type !== 'income').forEach((exp: any) => {
-          spentByCategory[exp.category] = (spentByCategory[exp.category] || 0) + Number(exp.amount);
+          const key = categoryKey(exp.category);
+          spentByCategory[key] = (spentByCategory[key] || 0) + Number(exp.amount);
         });
 
         // Merge with defined budgets
@@ -214,7 +216,7 @@ export default function Budget() {
               emoji: meta.emoji,
               name: meta.name,
               description: meta.description,
-              spent: spentByCategory[b.category] || 0,
+              spent: spentByCategory[categoryKey(b.category)] || 0,
               budget: b.limit
             };
           });
