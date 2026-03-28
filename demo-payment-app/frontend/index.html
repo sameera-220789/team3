@@ -1,12 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/pay-icon.svg" />
+    <!-- NovaPay SVG favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect width='48' height='48' rx='14' fill='%230A1628'/><defs><linearGradient id='g' x1='14' y1='6' x2='34' y2='42'><stop offset='0%25' stop-color='%2300E5FF'/><stop offset='60%25' stop-color='%2300C9FF'/><stop offset='100%25' stop-color='%23F5A623'/></linearGradient></defs><path d='M27 8L16 26H24L21 40L32 22H24L27 8Z' fill='url(%23g)'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Demo Payment App</title>
-    <meta name="description" content="Secure demo payment gateway integrated with Smart Expense Tracker" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>NovaPay — Smart Payments</title>
+    <meta name="description" content="NovaPay — Secure, instant payments powered by Smart Expense Tracker" />
+    <meta name="theme-color" content="#060818" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Ensure dark theme on init -->
+    <script>
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    </script>
   </head>
   <body>
     <div id="root"></div>
